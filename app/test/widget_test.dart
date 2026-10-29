@@ -1287,7 +1287,7 @@ void main() {
     core.dispose();
   });
 
-  testWidgets('a phone gets Home and Settings, and pages with a back bar', (
+  testWidgets('a phone gets Home, Settings and Logs, and pages with a back bar', (
     tester,
   ) async {
     stillMotion(tester);
@@ -1305,7 +1305,7 @@ void main() {
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Logs'), findsNothing);
+    expect(find.text('Logs'), findsOneWidget);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
@@ -1325,19 +1325,25 @@ void main() {
     expect(find.text('Account switching'), findsNothing);
     expect(find.text('Data used'), findsOneWidget);
 
-    // Logs cleared stay cleared when the page opens again.
+    // Logs have a tab of their own, and are not in Settings.
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Logs'), 200);
-    await tester.tap(find.text('Logs'));
+    expect(find.text('Logs'), findsOneWidget);
+
+    // Logs cleared stay cleared when the tab opens again.
+    final logsTab = find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Logs'),
+    );
+    await tester.tap(logsTab);
     await tester.pumpAndSettle();
     expect(find.textContaining('proxy started'), findsOneWidget);
     await tester.tap(find.byTooltip('Clear'));
     await tester.pumpAndSettle();
     expect(find.textContaining('proxy started'), findsNothing);
-    await tester.pageBack();
+    await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Logs'));
+    await tester.tap(logsTab);
     await tester.pumpAndSettle();
     expect(find.textContaining('proxy started'), findsNothing);
 
