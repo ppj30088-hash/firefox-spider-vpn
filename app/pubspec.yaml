@@ -33,6 +33,8 @@ flutter:
   assets:
     # The fox shield beside the app's name (tool/app_icons.py).
     - assets/logo.png
+    - assets/spider_emblem.png
+    - assets/spider_emblem_dark.png
     - assets/tray/
     # Country flags from flag-icons (MIT, assets/flags/LICENSE), the same
     # SVG files as the core's web dashboard.

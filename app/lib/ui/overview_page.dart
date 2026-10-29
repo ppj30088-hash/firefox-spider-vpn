@@ -914,28 +914,28 @@ class _HomePalette {
     connected: Midnight.connected,
     busy: Midnight.busy,
     error: Midnight.error,
-    second: Color(0xFF2EA8FF),
-    third: Color(0xFFB45CFF),
-    discOff: [Color(0xFF262E5A), Color(0xFF161C3C)],
-    discOffEdge: Color(0x1FFFFFFF),
+    second: Color(0xFF8A94AD),
+    third: Color(0xFF5A6073),
+    discOff: [Color(0xFF1B1B20), Color(0xFF0A0A0D)],
+    discOffEdge: Color(0x33FFFFFF),
   );
 
   static const day = _HomePalette(
     dark: false,
-    top: Color(0xFFE9EEFF),
-    bottom: Color(0xFFF9FAFF),
-    text: Color(0xFF151A35),
-    muted: Color(0xFF646C92),
+    top: Color(0xFFEDEEF2),
+    bottom: Color(0xFFFAFAFC),
+    text: Color(0xFF14161C),
+    muted: Color(0xFF6E7380),
     card: Color(0xD9FFFFFF),
-    cardBorder: Color(0x12202A66),
-    idle: Color(0xFF6A5CF0),
+    cardBorder: Color(0x1A282C38),
+    idle: Color(0xFF282C38),
     connected: Color(0xFF0DB37C),
     busy: Color(0xFFF08C00),
     error: Color(0xFFE5484D),
-    second: Color(0xFF38B6FF),
-    third: Color(0xFFFF7EB6),
-    discOff: [Colors.white, Color(0xFFF0F2FF)],
-    discOffEdge: Color(0x336A5CF0),
+    second: Color(0xFF8A94AD),
+    third: Color(0xFFB5BBCB),
+    discOff: [Colors.white, Color(0xFFF0F1F5)],
+    discOffEdge: Color(0x40282C38),
   );
 }
 
@@ -1481,15 +1481,13 @@ class _PowerOrb extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: on
-                      ? [Color.lerp(accent, Colors.white, 0.28)!, accent]
-                      : p.discOff,
+                  colors: p.discOff,
                 ),
+                // The button stays dark (light in the light theme); the
+                // state shows in its edge and glow.
                 border: Border.all(
-                  color: on
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : p.discOffEdge,
-                  width: 1.5,
+                  color: on ? accent : p.discOffEdge,
+                  width: on ? 3 : 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -1508,10 +1506,18 @@ class _PowerOrb extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: busy ? null : onPressed,
-                  child: Icon(
-                    Icons.power_settings_new_rounded,
-                    size: 58,
-                    color: on ? Colors.white : (p.dark ? p.muted : p.idle),
+                  // The spider emblem; dimmer while off.
+                  child: Center(
+                    child: Opacity(
+                      opacity: on ? 1 : 0.72,
+                      child: Image.asset(
+                        p.dark
+                            ? 'assets/spider_emblem.png'
+                            : 'assets/spider_emblem_dark.png',
+                        height: 92,
+                        filterQuality: FilterQuality.medium,
+                      ),
+                    ),
                   ),
                 ),
               ),

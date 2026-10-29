@@ -13,9 +13,9 @@ import 'servers_page.dart';
 import 'settings_page.dart';
 import 'widgets.dart';
 
-/// The phone layout: two tabs, Home and Settings, as phone apps have. The
-/// rest (accounts, servers, each group of settings, logs, about) opens as a
-/// page of its own with the system's back button.
+/// The phone layout: three tabs, Home, Settings and Logs, as phone apps
+/// have. The rest (accounts, servers, each group of settings, about) opens
+/// as a page of its own with the system's back button.
 class MobileShell extends StatefulWidget {
   const MobileShell({
     super.key,
@@ -86,24 +86,26 @@ class _MobileShellState extends State<MobileShell> {
     );
     final page =
         widget.noCore ??
-        (_tab == 0
-            ? OverviewPage(
-                core: core,
-                settings: settings,
-                onOpenServers: openServers,
-                onOpenAccounts: openAccounts,
-                onOpenConnection: openConnection,
-                phone: true,
-              )
-            : _readable(
-                _SettingsList(
-                  onOpenServers: openServers,
-                  onOpenAccounts: openAccounts,
-                  push: _push,
-                  core: core,
-                  settings: settings,
-                ),
-              ));
+        switch (_tab) {
+          0 => OverviewPage(
+            core: core,
+            settings: settings,
+            onOpenServers: openServers,
+            onOpenAccounts: openAccounts,
+            onOpenConnection: openConnection,
+            phone: true,
+          ),
+          1 => _readable(
+            _SettingsList(
+              onOpenServers: openServers,
+              onOpenAccounts: openAccounts,
+              push: _push,
+              core: core,
+              settings: settings,
+            ),
+          ),
+          _ => _readable(LogsPage(core: core, settings: settings)),
+        };
     return PopScope(
       canPop: _tab == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -140,6 +142,11 @@ class _MobileShellState extends State<MobileShell> {
                 icon: const Icon(Icons.settings_outlined),
                 selectedIcon: const Icon(Icons.settings_rounded),
                 label: l.navSettings,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.receipt_long_outlined),
+                selectedIcon: const Icon(Icons.receipt_long_rounded),
+                label: l.navLogs,
               ),
             ],
           ),
@@ -260,11 +267,6 @@ class _SettingsList extends StatelessWidget {
             ),
         ]),
         group(l.groupApp, [
-          tile(
-            Icons.receipt_long_outlined,
-            l.navLogs,
-            () => push(l.navLogs, () => LogsPage(core: core)),
-          ),
           tile(
             Icons.info_outline_rounded,
             l.navAbout,

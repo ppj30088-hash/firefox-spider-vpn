@@ -133,13 +133,13 @@ String locationName(AppLocalizations l, String code, String name) =>
 
 /// The phone home's colors: a deep navy night and the state's light.
 abstract final class Midnight {
-  static const top = Color(0xFF141B3D);
-  static const bottom = Color(0xFF070A18);
+  static const top = Color(0xFF111115);
+  static const bottom = Color(0xFF050507);
   static const connected = Color(0xFF10D9A0);
   static const busy = Color(0xFFFFB547);
   static const error = Color(0xFFFF5C7A);
-  static const idle = Color(0xFF7C83FF);
-  static const muted = Color(0xFF9AA3C7);
+  static const idle = Color(0xFFC4CAD6);
+  static const muted = Color(0xFF9A9EAD);
 }
 
 /// A dark theme for the phone's home and its navigation bar, with the

@@ -9,7 +9,8 @@ background keyed out, and used for:
   background layer + emblem foreground layer), the legacy ic_launcher.png, and
   the status bar / Quick Settings icon (drawable-*/ic_stat_logo.png, a white
   silhouette).
-- The app's logo (assets/logo.png), beside its name.
+- The app's logo (assets/logo.png), beside its name, and the emblem alone
+  (assets/spider_emblem*.png) in the home page's button.
 - The web dashboard's icon (../core/internal/service/web/icon.png).
 
 Run from app/ (needs Pillow and NumPy):
@@ -111,6 +112,16 @@ def main():
         icon.save(os.path.join(folder, 'ic_stat_logo.png'), optimize=True)
 
     tile(art, 256).save(os.path.join(APP, 'assets', 'logo.png'), optimize=True)
+    # The emblem alone, transparent, for the home page's button: silver for
+    # the dark theme, dark steel for the light one.
+    for name, rgb in (('spider_emblem', None), ('spider_emblem_dark', (36, 40, 52))):
+        e = art.copy()
+        if rgb:
+            e = Image.new('RGBA', art.size, rgb + (0,))
+            e.putalpha(art.getchannel('A'))
+        k = 400 / e.height
+        e.resize((round(e.width * k), 400), Image.LANCZOS).save(
+            os.path.join(APP, 'assets', name + '.png'), optimize=True)
     tile(art, 192).save(os.path.join(CORE, 'internal', 'service', 'web', 'icon.png'), optimize=True)
 
 
