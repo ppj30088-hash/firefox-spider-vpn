@@ -1242,12 +1242,8 @@ class _PhoneHome extends StatelessWidget {
                 connected: connected,
                 palette: p,
               ),
-              // Down and up: the speed now, and what has been used since
-              // the core started.
-              if (connected) ...[
-                _HomeTraffic(traffic: status.traffic, palette: p),
-                const SizedBox(height: 12),
-              ],
+              _HomeSpeed(palette: p, traffic: status.traffic, on: connected),
+              const SizedBox(height: 12),
               _PlaceCard(
                 palette: p,
                 place: place,
@@ -1255,10 +1251,75 @@ class _PhoneHome extends StatelessWidget {
                 onTap: onOpenServers,
               ),
               const SizedBox(height: 12),
-              _HomeData(status: status, palette: p, onTap: onOpenAccounts),
+              _HomeData(
+                status: status,
+                palette: p,
+                settings: settings,
+                onTap: onOpenAccounts,
+              ),
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// The speed now, download and upload, in two small cards under the state.
+class _HomeSpeed extends StatelessWidget {
+  const _HomeSpeed({
+    required this.palette,
+    required this.traffic,
+    required this.on,
+  });
+
+  final _HomePalette palette;
+  final Traffic? traffic;
+
+  /// The VPN carries the traffic: the speeds show, else they are zero.
+  final bool on;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = palette;
+    Widget card(IconData icon, int rate) => Expanded(
+      child: _HomeCard(
+        palette: p,
+        compact: true,
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.text.withValues(alpha: 0.07),
+              ),
+              child: Icon(icon, size: 18, color: p.text),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                formatRate(on ? rate : 0),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: p.text,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Row(
+      children: [
+        card(Icons.arrow_downward_rounded, traffic?.downRate ?? 0),
+        const SizedBox(width: 12),
+        card(Icons.arrow_upward_rounded, traffic?.upRate ?? 0),
       ],
     );
   }
@@ -1317,7 +1378,7 @@ class _HomeCard extends StatelessWidget {
           ? null
           : [
               BoxShadow(
-                color: const Color(0xFF2A3375).withValues(alpha: 0.08),
+                color: const Color(0xFF282C38).withValues(alpha: 0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -1499,7 +1560,7 @@ class _PowerOrb extends StatelessWidget {
                   BoxShadow(
                     color: on
                         ? accent.withValues(alpha: 0.5)
-                        : (p.dark ? Colors.black : const Color(0xFF2A3375))
+                        : (p.dark ? Colors.black : const Color(0xFF282C38))
                               .withValues(alpha: p.dark ? 0.45 : 0.14),
                     blurRadius: on ? 36 : 26,
                     offset: const Offset(0, 10),
@@ -1575,113 +1636,23 @@ class _Contours extends CustomPainter {
   bool shouldRepaint(_Contours old) => old.color != color || old.alpha != alpha;
 }
 
-/// The phone home's traffic: two cards side by side, down and up, each with
-/// the speed now and, under it, the data used since the core started.
-class _HomeTraffic extends StatelessWidget {
-  const _HomeTraffic({required this.traffic, required this.palette});
-
-  final Traffic? traffic;
-  final _HomePalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = traffic;
-    return Row(
-      children: [
-        Expanded(
-          child: _HomeTrafficTile(
-            palette: palette,
-            icon: Icons.arrow_downward_rounded,
-            color: palette.connected,
-            rate: formatRate(t?.downRate ?? 0),
-            total: formatBytes(t?.down ?? 0),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _HomeTrafficTile(
-            palette: palette,
-            icon: Icons.arrow_upward_rounded,
-            color: palette.muted,
-            rate: formatRate(t?.upRate ?? 0),
-            total: formatBytes(t?.up ?? 0),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HomeTrafficTile extends StatelessWidget {
-  const _HomeTrafficTile({
-    required this.palette,
-    required this.icon,
-    required this.color,
-    required this.rate,
-    required this.total,
-  });
-
-  final _HomePalette palette;
-  final IconData icon;
-  final Color color;
-  final String rate;
-  final String total;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _HomeCard(
-      palette: palette,
-      compact: true,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  rate,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.text,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                Text(
-                  total,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: palette.muted,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// The data used of the active account: a ring that fills as it is used,
 /// in the quota's color, and the amount in large type.
 class _HomeData extends StatelessWidget {
   const _HomeData({
     required this.status,
     required this.palette,
+    this.settings,
     this.onTap,
     this.compact = false,
   });
 
   final CoreStatus status;
   final _HomePalette palette;
+
+  /// Its own count of the month's traffic, for an account that does not
+  /// say how much it used.
+  final AppSettings? settings;
   final VoidCallback? onTap;
   final bool compact;
 
@@ -1693,8 +1664,15 @@ class _HomeData extends StatelessWidget {
     final muted = theme.textTheme.bodySmall?.copyWith(color: p.muted);
     final a = status.activeAccount;
     final usage = a?.usage;
+    // What the card counts: the account's own usage when it says; else, for
+    // an account, this app's count of the month against 50 GB.
+    final (int, int, DateTime?)? counted = usage != null && !usage.unlimited
+        ? (usage.usedBytes, usage.limitBytes, usage.resetAt)
+        : a != null && usage == null && settings != null
+        ? (settings!.usageBytes, AppSettings.usageLimitBytes, null)
+        : null;
     Widget body;
-    if (a == null || usage == null || usage.unlimited) {
+    if (counted == null) {
       body = Row(
         children: [
           Icon(
@@ -1717,8 +1695,8 @@ class _HomeData extends StatelessWidget {
         ],
       );
     } else {
-      final used = usage.usedBytes.clamp(0, usage.limitBytes);
-      final fraction = usage.limitBytes == 0 ? 0.0 : used / usage.limitBytes;
+      final used = counted.$1.clamp(0, counted.$2);
+      final fraction = counted.$2 == 0 ? 0.0 : used / counted.$2;
       final color = quotaColor(fraction * 100, status.thresholdPercent);
       body = Row(
         children: [
@@ -1764,9 +1742,9 @@ class _HomeData extends StatelessWidget {
                 ),
                 Text(
                   [
-                    l.dataLeftOf(formatBytes(usage.limitBytes)),
-                    if (usage.resetAt != null)
-                      l.resets(formatDate(l, usage.resetAt!)),
+                    l.dataLeftOf(formatBytes(counted.$2)),
+                    if (counted.$3 != null)
+                      l.resets(formatDate(l, counted.$3!)),
                   ].join(' · '),
                   style: muted,
                 ),

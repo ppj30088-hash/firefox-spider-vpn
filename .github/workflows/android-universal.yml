@@ -9,10 +9,11 @@
 # not install over the old one.
 name: Android universal APK
 
-# Manual only: spider-release.yml builds (and publishes) every system on each
-# push to main, this one is for a quick Android-only build.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
 
 permissions:
   contents: read
