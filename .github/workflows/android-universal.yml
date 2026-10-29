@@ -1,0 +1,92 @@
+# Builds one universal APK (arm64-v8a, armeabi-v7a, x86_64; installs on every
+# Android phone) of spider firefox vpn, with no tests and no secrets: open
+# the Actions tab, pick "Android universal APK", press "Run workflow", and
+# download the "spider-firefox-vpn-universal" artifact when it is done.
+#
+# The APK is signed with the debug key unless the repository has the
+# ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets (the same
+# ones build.yml uses). Keep signing with the same key, or a new build will
+# not install over the old one.
+name: Android universal APK
+
+# Manual only: spider-release.yml builds (and publishes) every system on each
+# push to main, this one is for a quick Android-only build.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.7
+  GOMOBILE_VERSION: v0.0.0-20260908204917-8b95e45f8d3e
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        name: Version
+        run: |
+          v="$(sed -n 's/^version:[[:space:]]*\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' app/pubspec.yaml)"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: NDK and gomobile
+        run: |
+          ndk="$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' app/android/app/build.gradle.kts)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$ndk" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk" >> "$GITHUB_ENV"
+          go install "golang.org/x/mobile/cmd/gomobile@$GOMOBILE_VERSION" "golang.org/x/mobile/cmd/gobind@$GOMOBILE_VERSION"
+      - name: Release key (optional)
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "::warning::no release key: the APK is signed with a debug key"
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE" | tr -d ' \r\n' | base64 -d > app/android/release.jks
+          # The key is checked here, so a bad copy of it shows as a clear
+          # warning (and a debug-signed APK) instead of a failed build.
+          if keytool -list -keystore app/android/release.jks -storepass "$PASSWORD" -alias release > /tmp/keytool.txt 2>&1; then
+            printf 'storeFile=../release.jks\nstorePassword=%s\nkeyAlias=release\nkeyPassword=%s\n' "$PASSWORD" "$PASSWORD" > app/android/key.properties
+            echo "release key OK"
+          else
+            echo "::warning::the release key could not be read, so the APK is signed with a debug key. keytool said:"
+            sed 's/^/    /' /tmp/keytool.txt
+            rm -f app/android/release.jks
+          fi
+      - name: Build
+        run: |
+          v='${{ steps.version.outputs.version }}'
+          mkdir -p app/android/app/libs
+          (cd core && gomobile bind -target=android -androidapi 24 -trimpath \
+            -ldflags "-s -w -X github.com/armanlife/firefox-vpn-client/core/internal/version.Current=$v" \
+            -o ../app/android/app/libs/core.aar ./mobile)
+          cd app
+          flutter pub get
+          flutter build apk --release --dart-define=APP_VERSION=$v
+          mkdir -p ../out
+          cp build/app/outputs/flutter-apk/app-release.apk ../out/spider-firefox-vpn-universal.apk
+      - name: Remove the key
+        if: always()
+        run: rm -f app/android/release.jks app/android/key.properties
+      - uses: actions/upload-artifact@v7
+        with:
+          name: spider-firefox-vpn-universal
+          path: out/spider-firefox-vpn-universal.apk
+          if-no-files-found: error

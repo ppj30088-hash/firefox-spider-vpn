@@ -1,0 +1,244 @@
+# Builds spider firefox vpn for Android, Windows, Linux (amd64 + arm64) and
+# macOS, with no tests and no secrets, and publishes all the files as one
+# GitHub release ("Releases" on the repository's page).
+#
+# It runs by itself on every push to main (except documentation-only ones),
+# or by hand: Actions tab, "Spider release", "Run workflow".
+#
+# Without the optional secrets the Android APK is signed with a debug key
+# and the apps install no updates by themselves; to update, install the new
+# file over the old one. Optional secrets (same names as build.yml):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, FIREFOX_VPN_SIGNING_KEY
+name: Spider release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spider-release
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.7
+  GOMOBILE_VERSION: v0.0.0-20260908204917-8b95e45f8d3e
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: |
+          v="$(sed -n 's/^version:[[:space:]]*\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' app/pubspec.yaml)"
+          [ -n "$v" ] || { echo "::error::no version in app/pubspec.yaml"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  android:
+    needs: version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: NDK and gomobile
+        run: |
+          ndk="$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' app/android/app/build.gradle.kts)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$ndk" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk" >> "$GITHUB_ENV"
+          go install "golang.org/x/mobile/cmd/gomobile@$GOMOBILE_VERSION" "golang.org/x/mobile/cmd/gobind@$GOMOBILE_VERSION"
+      - name: Release key (optional)
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "::warning::no release key: the APK is signed with a debug key"
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE" | tr -d ' \r\n' | base64 -d > app/android/release.jks
+          if keytool -list -keystore app/android/release.jks -storepass "$PASSWORD" -alias release > /tmp/keytool.txt 2>&1; then
+            printf 'storeFile=../release.jks\nstorePassword=%s\nkeyAlias=release\nkeyPassword=%s\n' "$PASSWORD" "$PASSWORD" > app/android/key.properties
+          else
+            echo "::warning::the release key could not be read, so the APK is signed with a debug key"
+            rm -f app/android/release.jks
+          fi
+      - name: Build
+        run: |
+          v='${{ needs.version.outputs.version }}'
+          mkdir -p app/android/app/libs
+          (cd core && gomobile bind -target=android -androidapi 24 -trimpath \
+            -ldflags "-s -w -X github.com/armanlife/firefox-vpn-client/core/internal/version.Current=$v" \
+            -o ../app/android/app/libs/core.aar ./mobile)
+          cd app
+          flutter pub get
+          flutter build apk --release --dart-define=APP_VERSION=$v
+          mkdir -p ../out
+          cp build/app/outputs/flutter-apk/app-release.apk ../out/spider-firefox-vpn-Android.apk
+      - name: Remove the key
+        if: always()
+        run: rm -f app/android/release.jks app/android/key.properties
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: out/*
+          if-no-files-found: error
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Inno Setup
+        run: choco upgrade innosetup -y --no-progress
+      - name: Build
+        shell: pwsh
+        env:
+          FIREFOX_VPN_SIGNING_KEY: ${{ secrets.FIREFOX_VPN_SIGNING_KEY }}
+        run: ./scripts/build-windows.ps1
+      - name: Release names
+        shell: pwsh
+        run: |
+          $v = '${{ needs.version.outputs.version }}'
+          New-Item -ItemType Directory out | Out-Null
+          Move-Item "dist/Firefox-VPN-$v-Windows-x64.zip" out/spider-firefox-vpn-Windows-x64.zip
+          Move-Item "dist/Firefox-VPN-$v-Windows-Setup-x64.exe" out/spider-firefox-vpn-Windows-Setup-x64.exe
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: out/*
+          if-no-files-found: error
+
+  linux:
+    needs: version
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: subosito/flutter-action@v2
+        if: matrix.arch == 'amd64'
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Flutter (ARM)
+        if: matrix.arch == 'arm64'
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$HOME/flutter"
+          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+          "$HOME/flutter/bin/flutter" --version
+      - name: Build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Build
+        env:
+          FIREFOX_VPN_SIGNING_KEY: ${{ secrets.FIREFOX_VPN_SIGNING_KEY }}
+        run: bash scripts/build-linux.sh
+      - name: Release name
+        run: |
+          mkdir out
+          mv "dist/Firefox-VPN-${{ needs.version.outputs.version }}-Linux-${{ matrix.arch }}.tar.gz" "out/spider-firefox-vpn-Linux-${{ matrix.arch }}.tar.gz"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-${{ matrix.arch }}
+          path: out/*
+          if-no-files-found: error
+
+  macos:
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        env:
+          FIREFOX_VPN_SIGNING_KEY: ${{ secrets.FIREFOX_VPN_SIGNING_KEY }}
+        run: bash scripts/build-macos.sh
+      - name: Release names
+        run: |
+          mkdir out
+          mv "dist/Firefox-VPN-${{ needs.version.outputs.version }}-macOS.dmg" out/spider-firefox-vpn-macOS.dmg
+          mv "dist/Firefox-VPN-${{ needs.version.outputs.version }}-macOS.tar.gz" out/spider-firefox-vpn-macOS.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    needs: [version, android, windows, linux, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: release
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A tag that does not start with "v", so build.yml (which needs
+          # the release secrets for a "v*" tag) does not start too.
+          tag="spider-${{ needs.version.outputs.version }}-b${{ github.run_number }}"
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          ls -l
+          cat > ../notes.md <<NOTES
+          Builds of commit ${GITHUB_SHA::7}: Android (APK), Windows (installer and portable zip), macOS (dmg), Linux (amd64 and arm64).
+
+          macOS: the app is not notarized, so open it the first time with right click, Open.
+          NOTES
+          gh release create "$tag" ./* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "spider firefox vpn ${{ needs.version.outputs.version }} (build ${{ github.run_number }})" \
+            --notes-file ../notes.md \
+            --latest
