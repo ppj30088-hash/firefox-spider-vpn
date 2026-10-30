@@ -453,10 +453,16 @@ jobs:
         with:
           go-version-file: core/go.mod
           cache-dependency-path: core/go.sum
+      # Only the platforms' files: not the macOS update test's logs and
+      # screenshots, which are artifacts too (an empty log is refused by
+      # the release).
       - uses: actions/download-artifact@v8
         with:
           path: release
+          pattern: '{windows,android,linux,linux-desktop-*,macos}'
           merge-multiple: true
+      - name: No empty files
+        run: find release -type f -empty -print -delete
       # The programs' names, spider's: Spider-Firefox-VPN-Windows-x64.zip,
       # and a copy of each file with the version after it.
       - name: Names
@@ -501,7 +507,9 @@ jobs:
             echo
             echo "| System | File |"
             echo "|---|---|"
-            echo "| Android (all phones) | [Spider-Firefox-VPN-Android-universal.apk]($base/Spider-Firefox-VPN-$v-Android-universal.apk) |"
+            echo "| Android, most phones (64-bit) | [arm64-v8a.apk]($base/Spider-Firefox-VPN-$v-Android-arm64-v8a.apk) |"
+            echo "| Android, older phones (32-bit) | [armeabi-v7a.apk]($base/Spider-Firefox-VPN-$v-Android-armeabi-v7a.apk) |"
+            echo "| Android, any phone (largest) | [universal.apk]($base/Spider-Firefox-VPN-$v-Android-universal.apk) |"
             echo "| Windows | [Setup]($base/Spider-Firefox-VPN-$v-Windows-Setup-x64.exe) · [portable zip]($base/Spider-Firefox-VPN-$v-Windows-x64.zip) |"
             echo "| macOS | [dmg]($base/Spider-Firefox-VPN-$v-macOS.dmg) |"
             echo "| Linux | [x64]($base/Spider-Firefox-VPN-$v-Linux-amd64.tar.gz) · [arm64]($base/Spider-Firefox-VPN-$v-Linux-arm64.tar.gz) |"
