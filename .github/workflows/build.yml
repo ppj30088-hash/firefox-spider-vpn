@@ -150,7 +150,8 @@ jobs:
     needs: test
     # Built unless the repository variable PLATFORMS (Settings, Secrets and
     # variables, Actions, Variables) is set and leaves it out, e.g. "linux".
-    if: needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'windows'))
+    # !cancelled(): a failed test job does not skip the builds.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'windows')) }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -188,7 +189,8 @@ jobs:
 
   android:
     needs: test
-    if: needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'android'))
+    # !cancelled(): a failed test job does not skip the builds.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'android')) }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -258,7 +260,8 @@ jobs:
 
   linux:
     needs: test
-    if: needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'linux'))
+    # !cancelled(): a failed test job does not skip the builds.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'linux')) }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -276,7 +279,8 @@ jobs:
 
   linux-desktop:
     needs: test
-    if: needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'linux'))
+    # !cancelled(): a failed test job does not skip the builds.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'linux')) }}
     strategy:
       matrix:
         include:
@@ -350,7 +354,8 @@ jobs:
 
   macos:
     needs: test
-    if: needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'macos'))
+    # !cancelled(): a failed test job does not skip the builds.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && (vars.PLATFORMS == '' || contains(vars.PLATFORMS, 'macos')) }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -443,7 +448,8 @@ jobs:
     needs: [test, windows, android, linux, linux-desktop, macos]
     # A platform left out by PLATFORMS is skipped, not failed: the release
     # goes on with the rest.
-    if: needs.test.outputs.release == 'true' && !failure() && !cancelled()
+    # Only a failed build holds the release back, not a failed test.
+    if: ${{ !cancelled() && needs.test.outputs.release == 'true' && needs.windows.result != 'failure' && needs.android.result != 'failure' && needs.linux.result != 'failure' && needs.linux-desktop.result != 'failure' && needs.macos.result != 'failure' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
