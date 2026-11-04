@@ -272,6 +272,7 @@
   "upToDate": "Ən son versiyadan istifadə edirsiniz.",
   "updateAvailable": "{version} versiyası mövcuddur.",
   "download": "Yüklə",
+  "upload": "Yükləmə",
   "updateCheckFailed": "Yeniləmələri yoxlamaq mümkün olmadı: {error}",
   "updateNow": "Yenilə",
   "updateDownloading": "{version} versiyası endirilir…",

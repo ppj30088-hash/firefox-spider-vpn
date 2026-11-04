@@ -949,6 +949,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get download => 'Descargar';
 
   @override
+  String get upload => 'Subida';
+
+  @override
   String updateCheckFailed(String error) {
     return 'No se pudieron buscar actualizaciones: $error';
   }

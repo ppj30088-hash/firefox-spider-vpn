@@ -272,6 +272,7 @@
   "upToDate": "Anda memiliki versi terbaru.",
   "updateAvailable": "Versi {version} tersedia.",
   "download": "Unduh",
+  "upload": "Unggah",
   "updateCheckFailed": "Tidak dapat memeriksa pembaruan: {error}",
   "updateNow": "Perbarui",
   "updateDownloading": "Mengunduh versi {version}…",

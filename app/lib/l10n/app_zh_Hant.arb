@@ -272,6 +272,7 @@
   "upToDate": "已是最新版本。",
   "updateAvailable": "已有新版本 {version}。",
   "download": "下載",
+  "upload": "上傳",
   "updateCheckFailed": "無法檢查更新：{error}",
   "updateNow": "更新",
   "updateDownloading": "正在下載版本 {version}…",

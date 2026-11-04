@@ -272,6 +272,7 @@
   "upToDate": "Bạn đang dùng phiên bản mới nhất.",
   "updateAvailable": "Đã có phiên bản mới {version}.",
   "download": "Tải xuống",
+  "upload": "Tải lên",
   "updateCheckFailed": "Không thể kiểm tra cập nhật: {error}",
   "updateNow": "Cập nhật",
   "updateDownloading": "Đang tải phiên bản {version}…",

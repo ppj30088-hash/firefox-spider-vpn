@@ -945,6 +945,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get download => 'ডাউনলোড';
 
   @override
+  String get upload => 'আপলোড';
+
+  @override
   String updateCheckFailed(String error) {
     return 'আপডেট যাচাই করা যায়নি: $error';
   }

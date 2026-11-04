@@ -945,6 +945,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get download => 'Tải xuống';
 
   @override
+  String get upload => 'Tải lên';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Không thể kiểm tra cập nhật: $error';
   }

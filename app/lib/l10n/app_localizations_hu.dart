@@ -951,6 +951,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get download => 'Letöltés';
 
   @override
+  String get upload => 'Feltöltés';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Nem sikerült frissítéseket keresni: $error';
   }

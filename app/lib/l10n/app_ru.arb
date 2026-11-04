@@ -272,6 +272,7 @@
   "upToDate": "У вас последняя версия.",
   "updateAvailable": "Доступна версия {version}.",
   "download": "Скачать",
+  "upload": "Отдача",
   "updateCheckFailed": "Не удалось проверить обновления: {error}",
   "updateNow": "Обновить",
   "updateDownloading": "Загрузка версии {version}…",

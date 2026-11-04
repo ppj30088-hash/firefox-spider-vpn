@@ -272,6 +272,7 @@
   "upToDate": "لديك أحدث إصدار.",
   "updateAvailable": "الإصدار {version} متاح.",
   "download": "تنزيل",
+  "upload": "رفع",
   "updateCheckFailed": "تعذّر التحقق من التحديثات: {error}",
   "updateNow": "تحديث",
   "updateDownloading": "جارٍ تنزيل الإصدار {version}…",

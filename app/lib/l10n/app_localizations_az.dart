@@ -945,6 +945,9 @@ class AppLocalizationsAz extends AppLocalizations {
   String get download => 'Yüklə';
 
   @override
+  String get upload => 'Yükləmə';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Yeniləmələri yoxlamaq mümkün olmadı: $error';
   }

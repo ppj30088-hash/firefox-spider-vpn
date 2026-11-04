@@ -942,6 +942,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get download => 'دانلود';
 
   @override
+  String get upload => 'آپلود';
+
+  @override
   String updateCheckFailed(String error) {
     return 'بررسی به‌روزرسانی ممکن نشد: $error';
   }

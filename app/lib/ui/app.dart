@@ -191,7 +191,7 @@ class _ShellState extends State<Shell> {
             _Page.overview => (
               const Icon(Icons.dashboard_outlined),
               const Icon(Icons.dashboard_rounded),
-              l.navOverview,
+              l.navHome,
             ),
             _Page.servers => (
               const Icon(Icons.public_outlined),
@@ -239,6 +239,7 @@ class _ShellState extends State<Shell> {
                         _page = _Page.settings;
                         _settingsOpening = SettingsSection.connection;
                       }),
+                      onOpenAbout: () => setState(() => _page = _Page.about),
                     ),
                     _Page.servers => ServersPage(
                       core: core,
@@ -260,6 +261,8 @@ class _ShellState extends State<Shell> {
           ),
         ],
       );
+      // The side menu's pages.
+      const menu = [_Page.overview, _Page.settings, _Page.logs];
       void select(int i) => setState(() {
         _page = pages[i];
         _settingsOpening = null;
@@ -280,39 +283,20 @@ class _ShellState extends State<Shell> {
       return Scaffold(
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: pages.indexOf(page),
-              onDestinationSelected: select,
-              // Icons with their names beside them.
-              extended: true,
-              minExtendedWidth: 190,
-              leading: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                child: Row(
-                  children: [
-                    const AppLogo(size: 34),
-                    const SizedBox(width: 10),
-                    Text(
-                      l.appTitle,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-              destinations: [
-                for (final (icon, selected, label) in items)
-                  NavigationRailDestination(
-                    icon: icon,
-                    selectedIcon: selected,
-                    label: Text(label),
-                  ),
+            // Home, Settings and Logs; the account at the bottom. The server
+            // list and About open from the home page.
+            _PillNav(
+              items: [
+                for (final pg in menu) items[pages.indexOf(pg)],
               ],
-              // The traffic at the bottom of the menu; in a short window the
-              // pages above it scroll rather than run under it.
-              trailing: _TrafficPanel(traffic: status?.traffic),
-              trailingAtBottom: true,
-              scrollable: true,
+              selected: menu.indexOf(page),
+              onSelected: (i) => select(pages.indexOf(menu[i])),
+              attention: needsAttention,
+              accountsSelected: page == _Page.accounts,
+              onAccounts: () => setState(() {
+                _page = _Page.accounts;
+                _settingsOpening = null;
+              }),
             ),
             // A maximized window: the pages stay as wide as reads well; the
             // home page, centered by itself, keeps its colors to the edges.
@@ -332,86 +316,6 @@ class _ShellState extends State<Shell> {
       );
     },
   );
-}
-
-/// The side menu's traffic: the speed now and the total since the core
-/// started, through Mozilla, up and down.
-class _TrafficPanel extends StatelessWidget {
-  const _TrafficPanel({required this.traffic});
-
-  final Traffic? traffic;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final t = traffic;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-      child: SizedBox(
-        width: 166,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TrafficCard(
-              title: l.liveTraffic,
-              up: formatRate(t?.upRate ?? 0),
-              down: formatRate(t?.downRate ?? 0),
-            ),
-            const SizedBox(height: 8),
-            _TrafficCard(
-              title: l.totalTraffic,
-              up: formatBytes(t?.up ?? 0),
-              down: formatBytes(t?.down ?? 0),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TrafficCard extends StatelessWidget {
-  const _TrafficCard({
-    required this.title,
-    required this.up,
-    required this.down,
-  });
-
-  final String title;
-  final String up;
-  final String down;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final value = theme.textTheme.bodySmall?.copyWith(
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
-    Widget line(IconData icon, Color color, String text) => Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const Spacer(),
-        Text(text, style: value),
-      ],
-    );
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.labelMedium),
-          const SizedBox(height: 4),
-          line(Icons.arrow_upward_rounded, StatusColors.good, up),
-          line(Icons.arrow_downward_rounded, theme.colorScheme.primary, down),
-        ],
-      ),
-    );
-  }
 }
 
 class _LostBanner extends StatelessWidget {
@@ -503,6 +407,165 @@ class _NoCore extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The computer's side menu: a dark capsule of Home, Settings and Logs, the
+/// chosen one lit in green, and the account (its page) at the bottom.
+class _PillNav extends StatelessWidget {
+  const _PillNav({
+    required this.items,
+    required this.selected,
+    required this.onSelected,
+    required this.attention,
+    required this.accountsSelected,
+    required this.onAccounts,
+  });
+
+  /// Each entry's icon, chosen icon and name.
+  final List<(Widget, Widget, String)> items;
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  /// Accounts that need signing in again.
+  final int attention;
+  final bool accountsSelected;
+  final VoidCallback onAccounts;
+
+  static const _green = Color(0xFF1FBF84);
+  static const _idle = Color(0xFF9AA0AE);
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    Widget entry({
+      required Widget icon,
+      required String label,
+      required bool on,
+      required VoidCallback onTap,
+    }) {
+      final color = on ? Colors.white : _idle;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Semantics(
+          button: true,
+          selected: on,
+          label: label,
+          child: Material(
+            color: on ? _green : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                width: 72,
+                height: 66,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconTheme(
+                      data: IconThemeData(color: color, size: 24),
+                      child: icon,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 0, 16),
+      child: Center(
+        child: Container(
+          width: 92,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F0F13),
+            borderRadius: BorderRadius.circular(46),
+            border: Border.all(color: const Color(0x22FFFFFF)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < items.length; i++)
+                entry(
+                  icon: i == selected ? items[i].$2 : items[i].$1,
+                  label: items[i].$3,
+                  on: i == selected,
+                  onTap: () => onSelected(i),
+                ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                child: Divider(height: 1, color: Color(0x22FFFFFF)),
+              ),
+              Tooltip(
+                message: l.navAccounts,
+                child: InkWell(
+                  onTap: onAccounts,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Badge(
+                          isLabelVisible: attention > 0,
+                          label: Text('$attention'),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: accountsSelected
+                                    ? _green
+                                    : const Color(0x33FFFFFF),
+                                width: 2,
+                              ),
+                            ),
+                            child: const AppLogo(size: 40),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l.navAccounts,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: accountsSelected ? _green : _idle,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

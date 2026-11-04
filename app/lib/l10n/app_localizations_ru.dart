@@ -947,6 +947,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get download => 'Скачать';
 
   @override
+  String get upload => 'Отдача';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Не удалось проверить обновления: $error';
   }

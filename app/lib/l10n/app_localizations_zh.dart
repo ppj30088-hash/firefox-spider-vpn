@@ -922,6 +922,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get download => '下载';
 
   @override
+  String get upload => '上传';
+
+  @override
   String updateCheckFailed(String error) {
     return '无法检查更新：$error';
   }
@@ -2336,6 +2339,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get download => '下載';
+
+  @override
+  String get upload => '上傳';
 
   @override
   String updateCheckFailed(String error) {

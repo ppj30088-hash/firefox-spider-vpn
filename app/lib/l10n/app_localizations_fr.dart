@@ -950,6 +950,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get download => 'Télécharger';
 
   @override
+  String get upload => 'Envoi';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Impossible de rechercher des mises à jour : $error';
   }

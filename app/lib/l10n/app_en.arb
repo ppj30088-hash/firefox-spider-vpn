@@ -599,6 +599,7 @@
     }
   },
   "download": "Download",
+  "upload": "Upload",
   "updateCheckFailed": "Could not check for updates: {error}",
   "@updateCheckFailed": {
     "placeholders": {

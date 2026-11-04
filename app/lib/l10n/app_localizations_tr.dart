@@ -945,6 +945,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get download => 'İndir';
 
   @override
+  String get upload => 'Yükleme';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Güncellemeler kontrol edilemedi: $error';
   }

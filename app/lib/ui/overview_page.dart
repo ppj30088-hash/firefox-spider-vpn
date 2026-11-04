@@ -16,6 +16,7 @@ import '../l10n/app_localizations.dart';
 import '../platform.dart';
 import 'connection_mode.dart';
 import 'format.dart';
+import 'home_extras.dart';
 import 'port_dialog.dart';
 import 'signin_dialog.dart';
 import 'widgets.dart';
@@ -31,6 +32,7 @@ class OverviewPage extends StatelessWidget {
     this.onOpenServers,
     this.onOpenAccounts,
     this.onOpenConnection,
+    this.onOpenAbout,
     this.phone = false,
   });
 
@@ -47,6 +49,10 @@ class OverviewPage extends StatelessWidget {
 
   /// Opens the connection settings, when Mozilla's servers are blocked.
   final VoidCallback? onOpenConnection;
+
+  /// Opens the About page (the computer's home has a button for it: the side
+  /// menu has no entry).
+  final VoidCallback? onOpenAbout;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +77,7 @@ class OverviewPage extends StatelessWidget {
       onOpenServers: onOpenServers,
       onOpenAccounts: onOpenAccounts,
       onOpenConnection: onOpenConnection,
+      onOpenAbout: onOpenAbout,
     );
   }
 }
@@ -261,6 +268,7 @@ class _DesktopHome extends StatelessWidget {
     this.onOpenServers,
     this.onOpenAccounts,
     this.onOpenConnection,
+    this.onOpenAbout,
   });
 
   final CoreController core;
@@ -272,6 +280,7 @@ class _DesktopHome extends StatelessWidget {
   final VoidCallback? onOpenServers;
   final VoidCallback? onOpenAccounts;
   final VoidCallback? onOpenConnection;
+  final VoidCallback? onOpenAbout;
 
   /// The connection mode shown as chosen; changing it (chooseConnectionMode)
   /// keeps the proxy running and connected.
@@ -327,14 +336,56 @@ class _DesktopHome extends StatelessWidget {
             ),
           ),
           Positioned.fill(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: _content(context, p),
-                ),
-              ),
+            // Wide: the connection in the middle and the speeds, the delay
+            // and the data used in a column beside it; narrow: one column.
+            child: LayoutBuilder(
+              builder: (context, box) {
+                final wide = box.maxWidth >= 980;
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _DesktopHeader(palette: p, onAbout: onOpenAbout),
+                      const SizedBox(height: 8),
+                      if (wide)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 560,
+                                  ),
+                                  child: _content(context, p, wide: true),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            SizedBox(
+                              width: 300,
+                              child: _DesktopStats(
+                                core: core,
+                                status: status,
+                                settings: settings,
+                                palette: p,
+                                onOpenAccounts: onOpenAccounts,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 640),
+                            child: _content(context, p),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -356,7 +407,7 @@ class _DesktopHome extends StatelessWidget {
     _ => p.idle,
   };
 
-  Widget _content(BuildContext context, _HomePalette p) {
+  Widget _content(BuildContext context, _HomePalette p, {bool wide = false}) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final look = PhaseLook.of(l, status);
@@ -397,6 +448,29 @@ class _DesktopHome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Wide: the location (its flag opens the server list) and how long
+        // the connection has lasted, above the button.
+        if (wide) ...[
+          Center(
+            child: _PlaceHeader(
+              palette: p,
+              place: place,
+              accent: accent,
+              onTap: onOpenServers,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: ConnectedTimer(
+              since: connected ? proxy?.startedAt : null,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: connected ? p.text : p.muted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         Center(
           child: _PowerOrb(
             palette: p,
@@ -567,8 +641,19 @@ class _DesktopHome extends StatelessWidget {
           connected: connected,
           palette: p,
         ),
-        // Side by side when there is room.
-        LayoutBuilder(
+        // Wide: the server list's button; the data used is in the column
+        // beside. Narrow: the location and the data used, side by side
+        // when there is room.
+        if (wide)
+          Center(
+            child: FilledButton.tonalIcon(
+              onPressed: onOpenServers,
+              icon: const Icon(Icons.public_rounded),
+              label: Text(l.navServers),
+            ),
+          )
+        else
+          LayoutBuilder(
           builder: (context, box) => box.maxWidth >= 560
               ? IntrinsicHeight(
                   child: Row(
@@ -586,6 +671,342 @@ class _DesktopHome extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// What the data used shows: the account's own usage when it says, else,
+/// for an account, this app's count of the month against 50 GB; null when
+/// there is nothing to count (no account, or unlimited).
+(int, int, DateTime?)? _countedUsage(CoreStatus status, AppSettings? settings) {
+  final a = status.activeAccount;
+  final usage = a?.usage;
+  if (usage != null && !usage.unlimited) {
+    return (usage.usedBytes, usage.limitBytes, usage.resetAt);
+  }
+  if (a != null && usage == null && settings != null) {
+    return (settings.usageBytes, AppSettings.usageLimitBytes, null);
+  }
+  return null;
+}
+
+/// The computer home's top row: the logo and name, and a button to About.
+class _DesktopHeader extends StatelessWidget {
+  const _DesktopHeader({required this.palette, this.onAbout});
+
+  final _HomePalette palette;
+  final VoidCallback? onAbout;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = palette;
+    return Row(
+      children: [
+        const AppLogo(size: 36),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            l.appTitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: p.text,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (onAbout != null)
+          IconButton.filledTonal(
+            tooltip: l.navAbout,
+            onPressed: onAbout,
+            icon: const Icon(Icons.info_outline_rounded),
+          ),
+      ],
+    );
+  }
+}
+
+/// The location above the button: its flag in a ring, and its name.
+class _PlaceHeader extends StatelessWidget {
+  const _PlaceHeader({
+    required this.palette,
+    required this.place,
+    required this.accent,
+    this.onTap,
+  });
+
+  final _HomePalette palette;
+  final HomePlace place;
+  final Color accent;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: accent.withValues(alpha: 0.7), width: 2),
+              ),
+              child: ClipOval(child: CountryFlag(code: place.flag, width: 56)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              place.name,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: palette.text,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The column beside the connection: the download and upload speeds and the
+/// connection's delay (each with the last minute as a chart), and the data
+/// used of the month's allowance.
+class _DesktopStats extends StatelessWidget {
+  const _DesktopStats({
+    required this.core,
+    required this.status,
+    required this.settings,
+    required this.palette,
+    this.onOpenAccounts,
+  });
+
+  final CoreController core;
+  final CoreStatus status;
+  final AppSettings settings;
+  final _HomePalette palette;
+  final VoidCallback? onOpenAccounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final p = palette;
+    final t = status.traffic;
+    final test = core.lastTest;
+    final delay = test != null && test.ok ? l.milliseconds(test.responseMs) : '–';
+    return RateHistory(
+      core: core,
+      builder: (context, down, up, delays) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _StatCard(
+            palette: p,
+            icon: Icons.arrow_downward_rounded,
+            color: p.connected,
+            title: l.download,
+            value: formatRate(t?.downRate ?? 0),
+            values: down,
+          ),
+          const SizedBox(height: 12),
+          _StatCard(
+            palette: p,
+            icon: Icons.arrow_upward_rounded,
+            color: const Color(0xFF4C8DFF),
+            title: l.upload,
+            value: formatRate(t?.upRate ?? 0),
+            values: up,
+          ),
+          const SizedBox(height: 12),
+          _StatCard(
+            palette: p,
+            icon: Icons.bolt_rounded,
+            color: const Color(0xFFFF8A3D),
+            title: l.realDelay,
+            value: delay,
+            values: delays,
+          ),
+          const SizedBox(height: 12),
+          _UsageStatCard(
+            palette: p,
+            status: status,
+            settings: settings,
+            onTap: onOpenAccounts,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small card: an icon and a title, the value now, and the last minute as
+/// a chart.
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.palette,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.value,
+    required this.values,
+  });
+
+  final _HomePalette palette;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String value;
+  final List<double> values;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = palette;
+    return _HomeCard(
+      palette: p,
+      compact: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.16),
+                ),
+                child: Icon(icon, size: 15, color: color),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.labelMedium?.copyWith(color: p.muted),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                value,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Sparkline(values: values, color: color, height: 40),
+        ],
+      ),
+    );
+  }
+}
+
+/// The data used of the allowance (50 GB): the amount, a bar, and what is
+/// left. Without a count (no account) it is the home page's usual card.
+class _UsageStatCard extends StatelessWidget {
+  const _UsageStatCard({
+    required this.palette,
+    required this.status,
+    required this.settings,
+    this.onTap,
+  });
+
+  final _HomePalette palette;
+  final CoreStatus status;
+  final AppSettings settings;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final counted = _countedUsage(status, settings);
+    if (counted == null) {
+      return _HomeData(
+        status: status,
+        palette: palette,
+        settings: settings,
+        onTap: onTap,
+        compact: true,
+      );
+    }
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final p = palette;
+    final used = counted.$1.clamp(0, counted.$2);
+    final fraction = counted.$2 == 0 ? 0.0 : used / counted.$2;
+    final color = quotaColor(fraction * 100, status.thresholdPercent);
+    return _HomeCard(
+      palette: p,
+      onTap: onTap,
+      compact: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.16),
+                ),
+                child: Icon(Icons.data_usage_rounded, size: 15, color: color),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l.dataUsedTitle,
+                  style: theme.textTheme.labelMedium?.copyWith(color: p.muted),
+                ),
+              ),
+              Text(
+                ltr('${(fraction * 100).round()}%'),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            formatBytes(used),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: p.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 8,
+              color: color,
+              backgroundColor: p.text.withValues(alpha: 0.09),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            [
+              l.dataLeftOf(formatBytes(counted.$2)),
+              if (counted.$3 != null) l.resets(formatDate(l, counted.$3!)),
+            ].join(' · '),
+            style: theme.textTheme.bodySmall?.copyWith(color: p.muted),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1119,6 +1540,19 @@ class _PhoneHome extends StatelessWidget {
                   color: on ? accent : p.text,
                 ),
               ),
+              // How long the connection has lasted.
+              if (connected) ...[
+                const SizedBox(height: 4),
+                Center(
+                  child: ConnectedTimer(
+                    since: status.proxy?.startedAt,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: p.muted,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               if (connected)
                 Wrap(
@@ -1666,11 +2100,7 @@ class _HomeData extends StatelessWidget {
     final usage = a?.usage;
     // What the card counts: the account's own usage when it says; else, for
     // an account, this app's count of the month against 50 GB.
-    final (int, int, DateTime?)? counted = usage != null && !usage.unlimited
-        ? (usage.usedBytes, usage.limitBytes, usage.resetAt)
-        : a != null && usage == null && settings != null
-        ? (settings!.usageBytes, AppSettings.usageLimitBytes, null)
-        : null;
+    final counted = _countedUsage(status, settings);
     Widget body;
     if (counted == null) {
       body = Row(

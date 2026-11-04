@@ -272,6 +272,7 @@
   "upToDate": "En son sürümü kullanıyorsunuz.",
   "updateAvailable": "{version} sürümü mevcut.",
   "download": "İndir",
+  "upload": "Yükleme",
   "updateCheckFailed": "Güncellemeler kontrol edilemedi: {error}",
   "updateNow": "Güncelle",
   "updateDownloading": "{version} sürümü indiriliyor…",

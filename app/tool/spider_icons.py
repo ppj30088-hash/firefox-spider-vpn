@@ -42,8 +42,12 @@ def emblem():
     im = Image.open(SOURCE).convert('RGB').crop(EMBLEM_BOX)
     rgb = np.asarray(im).astype(float)
     lum = rgb.mean(axis=2)
-    alpha = np.clip((lum - 14) / 34, 0, 1)
-    out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
+    alpha = np.clip((lum - 14) / 34, 0, 1) * 255
+    # The picture is a JPEG: its dark background has faint speckles. Alpha
+    # below a quarter is cut to nothing, so none of it shows on a light
+    # background.
+    alpha = np.where(alpha < 70, 0, np.clip((alpha - 70) * 255 / 150, 0, 255))
+    out = np.dstack([rgb, alpha]).astype(np.uint8)
     img = Image.fromarray(out, 'RGBA')
     return img.crop(img.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox())
 

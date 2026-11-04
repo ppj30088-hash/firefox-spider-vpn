@@ -945,6 +945,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get download => 'Unduh';
 
   @override
+  String get upload => 'Unggah';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Tidak dapat memeriksa pembaruan: $error';
   }

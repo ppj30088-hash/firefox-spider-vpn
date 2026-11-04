@@ -1010,6 +1010,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
+    // A wide window: the server list's button is on the home page.
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final api = FakeApi();
     final core = CoreController(
       () async => api,
@@ -1278,7 +1282,12 @@ void main() {
     expect(find.text("Don't have a Firefox Account?"), findsOneWidget);
     expect(find.text('accounts.firefox.com'), findsOneWidget);
 
-    await tester.tap(find.text('About'));
+    // About opens from the home page's button.
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('About'));
     await tester.pumpAndSettle();
     expect(find.text('9.9'), findsOneWidget);
     expect(find.text('Check for updates'), findsWidgets);
@@ -1681,11 +1690,8 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(
-      tester.getBottomLeft(find.text('Total traffic')).dy,
-      lessThanOrEqualTo(441),
-    );
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('Logs'), findsOneWidget);
 
     // Just under the computer layout's width, the phone's, with a problem
     // box and a notice: nothing runs past the bottom.
@@ -1697,7 +1703,7 @@ void main() {
     tester.view.physicalSize = const Size(624, 441);
     await core.refresh();
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(
       find.text(
         "This country isn't open to your account. Choose another country.",

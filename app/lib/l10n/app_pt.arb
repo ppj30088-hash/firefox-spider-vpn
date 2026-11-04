@@ -272,6 +272,7 @@
   "upToDate": "Você tem a versão mais recente.",
   "updateAvailable": "A versão {version} está disponível.",
   "download": "Baixar",
+  "upload": "Envio",
   "updateCheckFailed": "Não foi possível verificar atualizações: {error}",
   "updateNow": "Atualizar",
   "updateDownloading": "Baixando a versão {version}…",

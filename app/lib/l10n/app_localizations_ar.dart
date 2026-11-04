@@ -955,6 +955,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get download => 'تنزيل';
 
   @override
+  String get upload => 'رفع';
+
+  @override
   String updateCheckFailed(String error) {
     return 'تعذّر التحقق من التحديثات: $error';
   }

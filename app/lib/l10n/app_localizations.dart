@@ -1755,6 +1755,12 @@ abstract class AppLocalizations {
   /// **'Download'**
   String get download;
 
+  /// No description provided for @upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload'**
+  String get upload;
+
   /// No description provided for @updateCheckFailed.
   ///
   /// In en, this message translates to:

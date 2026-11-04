@@ -272,6 +272,7 @@
   "upToDate": "আপনার কাছে সর্বশেষ সংস্করণ আছে।",
   "updateAvailable": "সংস্করণ {version} পাওয়া যাচ্ছে।",
   "download": "ডাউনলোড",
+  "upload": "আপলোড",
   "updateCheckFailed": "আপডেট যাচাই করা যায়নি: {error}",
   "updateNow": "আপডেট করুন",
   "updateDownloading": "সংস্করণ {version} ডাউনলোড হচ্ছে…",

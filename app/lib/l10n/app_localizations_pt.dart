@@ -946,6 +946,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get download => 'Baixar';
 
   @override
+  String get upload => 'Envio';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Não foi possível verificar atualizações: $error';
   }

@@ -272,6 +272,7 @@
   "upToDate": "A legújabb verziót használja.",
   "updateAvailable": "Elérhető a(z) {version} verzió.",
   "download": "Letöltés",
+  "upload": "Feltöltés",
   "updateCheckFailed": "Nem sikerült frissítéseket keresni: {error}",
   "updateNow": "Frissítés",
   "updateDownloading": "A(z) {version} verzió letöltése…",
