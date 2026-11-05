@@ -273,6 +273,7 @@
   "updateAvailable": "Elérhető a(z) {version} verzió.",
   "download": "Letöltés",
   "upload": "Feltöltés",
+  "connectionTime": "Kapcsolat ideje",
   "updateCheckFailed": "Nem sikerült frissítéseket keresni: {error}",
   "updateNow": "Frissítés",
   "updateDownloading": "A(z) {version} verzió letöltése…",

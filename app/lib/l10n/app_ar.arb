@@ -273,6 +273,7 @@
   "updateAvailable": "الإصدار {version} متاح.",
   "download": "تنزيل",
   "upload": "رفع",
+  "connectionTime": "مدة الاتصال",
   "updateCheckFailed": "تعذّر التحقق من التحديثات: {error}",
   "updateNow": "تحديث",
   "updateDownloading": "جارٍ تنزيل الإصدار {version}…",

@@ -925,6 +925,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get upload => '上传';
 
   @override
+  String get connectionTime => '连接时长';
+
+  @override
   String updateCheckFailed(String error) {
     return '无法检查更新：$error';
   }
@@ -2342,6 +2345,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get upload => '上傳';
+
+  @override
+  String get connectionTime => '連線時間';
 
   @override
   String updateCheckFailed(String error) {

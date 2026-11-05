@@ -129,26 +129,63 @@ class _MobileShellState extends State<MobileShell> {
               _tab == 0 &&
               widget.noCore == null &&
               Theme.of(context).brightness == Brightness.dark,
-          child: NavigationBar(
-            selectedIndex: _tab,
-            onDestinationSelected: (i) => setState(() => _tab = i),
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
-                selectedIcon: const Icon(Icons.home_rounded),
-                label: l.navHome,
+          // A dark capsule floating above the bottom edge, the chosen tab lit
+          // in green (the computer's side menu, turned to lie down).
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(34),
+                child: NavigationBarTheme(
+                  data: NavigationBarThemeData(
+                    height: 68,
+                    backgroundColor: const Color(0xFF0F0F13),
+                    surfaceTintColor: Colors.transparent,
+                    indicatorColor: const Color(0xFF1FBF84),
+                    iconTheme: WidgetStateProperty.resolveWith(
+                      (states) => IconThemeData(
+                        color: states.contains(WidgetState.selected)
+                            ? Colors.white
+                            : const Color(0xFF9AA0AE),
+                      ),
+                    ),
+                    labelTextStyle: WidgetStateProperty.resolveWith(
+                      (states) => TextStyle(
+                        fontSize: 11,
+                        fontWeight: states.contains(WidgetState.selected)
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: states.contains(WidgetState.selected)
+                            ? Colors.white
+                            : const Color(0xFF9AA0AE),
+                      ),
+                    ),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: _tab,
+                    onDestinationSelected: (i) => setState(() => _tab = i),
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.home_outlined),
+                        selectedIcon: const Icon(Icons.home_rounded),
+                        label: l.navHome,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.settings_outlined),
+                        selectedIcon: const Icon(Icons.settings_rounded),
+                        label: l.navSettings,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.receipt_long_outlined),
+                        selectedIcon: const Icon(Icons.receipt_long_rounded),
+                        label: l.navLogs,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings_rounded),
-                label: l.navSettings,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.receipt_long_outlined),
-                selectedIcon: const Icon(Icons.receipt_long_rounded),
-                label: l.navLogs,
-              ),
-            ],
+            ),
           ),
         ),
       ),

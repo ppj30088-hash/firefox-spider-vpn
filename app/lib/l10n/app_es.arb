@@ -273,6 +273,7 @@
   "updateAvailable": "La versión {version} está disponible.",
   "download": "Descargar",
   "upload": "Subida",
+  "connectionTime": "Tiempo conectado",
   "updateCheckFailed": "No se pudieron buscar actualizaciones: {error}",
   "updateNow": "Actualizar",
   "updateDownloading": "Descargando la versión {version}…",

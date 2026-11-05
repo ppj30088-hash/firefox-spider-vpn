@@ -950,6 +950,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get upload => 'Отдача';
 
   @override
+  String get connectionTime => 'Время подключения';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Не удалось проверить обновления: $error';
   }

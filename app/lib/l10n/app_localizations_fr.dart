@@ -953,6 +953,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get upload => 'Envoi';
 
   @override
+  String get connectionTime => 'Durée de connexion';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Impossible de rechercher des mises à jour : $error';
   }

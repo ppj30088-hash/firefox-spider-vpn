@@ -273,6 +273,7 @@
   "updateAvailable": "{version} versiyası mövcuddur.",
   "download": "Yüklə",
   "upload": "Yükləmə",
+  "connectionTime": "Bağlantı müddəti",
   "updateCheckFailed": "Yeniləmələri yoxlamaq mümkün olmadı: {error}",
   "updateNow": "Yenilə",
   "updateDownloading": "{version} versiyası endirilir…",

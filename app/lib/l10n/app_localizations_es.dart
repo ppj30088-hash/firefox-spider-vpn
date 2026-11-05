@@ -952,6 +952,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get upload => 'Subida';
 
   @override
+  String get connectionTime => 'Tiempo conectado';
+
+  @override
   String updateCheckFailed(String error) {
     return 'No se pudieron buscar actualizaciones: $error';
   }

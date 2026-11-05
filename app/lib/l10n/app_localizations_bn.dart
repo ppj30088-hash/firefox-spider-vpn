@@ -948,6 +948,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get upload => 'আপলোড';
 
   @override
+  String get connectionTime => 'সংযোগের সময়';
+
+  @override
   String updateCheckFailed(String error) {
     return 'আপডেট যাচাই করা যায়নি: $error';
   }

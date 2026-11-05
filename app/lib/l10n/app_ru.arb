@@ -273,6 +273,7 @@
   "updateAvailable": "Доступна версия {version}.",
   "download": "Скачать",
   "upload": "Отдача",
+  "connectionTime": "Время подключения",
   "updateCheckFailed": "Не удалось проверить обновления: {error}",
   "updateNow": "Обновить",
   "updateDownloading": "Загрузка версии {version}…",

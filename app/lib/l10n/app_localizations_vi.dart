@@ -948,6 +948,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get upload => 'Tải lên';
 
   @override
+  String get connectionTime => 'Thời gian kết nối';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Không thể kiểm tra cập nhật: $error';
   }

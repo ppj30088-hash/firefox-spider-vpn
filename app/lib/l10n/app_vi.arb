@@ -273,6 +273,7 @@
   "updateAvailable": "Đã có phiên bản mới {version}.",
   "download": "Tải xuống",
   "upload": "Tải lên",
+  "connectionTime": "Thời gian kết nối",
   "updateCheckFailed": "Không thể kiểm tra cập nhật: {error}",
   "updateNow": "Cập nhật",
   "updateDownloading": "Đang tải phiên bản {version}…",

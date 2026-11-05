@@ -945,6 +945,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get upload => 'آپلود';
 
   @override
+  String get connectionTime => 'مدت اتصال';
+
+  @override
   String updateCheckFailed(String error) {
     return 'بررسی به‌روزرسانی ممکن نشد: $error';
   }

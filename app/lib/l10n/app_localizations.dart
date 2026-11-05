@@ -1761,6 +1761,12 @@ abstract class AppLocalizations {
   /// **'Upload'**
   String get upload;
 
+  /// No description provided for @connectionTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection time'**
+  String get connectionTime;
+
   /// No description provided for @updateCheckFailed.
   ///
   /// In en, this message translates to:

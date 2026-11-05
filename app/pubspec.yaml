@@ -35,6 +35,7 @@ flutter:
     - assets/logo.png
     - assets/spider_emblem.png
     - assets/spider_emblem_dark.png
+    - assets/world_map.png
     - assets/tray/
     # Country flags from flag-icons (MIT, assets/flags/LICENSE), the same
     # SVG files as the core's web dashboard.

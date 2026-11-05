@@ -949,6 +949,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get upload => 'Envio';
 
   @override
+  String get connectionTime => 'Tempo conectado';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Não foi possível verificar atualizações: $error';
   }

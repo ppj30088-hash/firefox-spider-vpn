@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../core/core_controller.dart';
+import '../core/models.dart';
+import 'widgets.dart';
 
 /// A small line chart of the last values, smooth, with a soft fill under
 /// the line and a dot at its end (the computer home's speed cards).
@@ -210,4 +213,168 @@ class _RateHistoryState extends State<RateHistory> {
   @override
   Widget build(BuildContext context) =>
       widget.builder(context, _down, _up, _delay);
+}
+
+/// The world, faint, behind the home page: its land in [color].
+class WorldMap extends StatelessWidget {
+  const WorldMap({super.key, required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: ExcludeSemantics(
+      child: Image.asset(
+        'assets/world_map.png',
+        color: color,
+        colorBlendMode: BlendMode.srcIn,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+      ),
+    ),
+  );
+}
+
+/// A flag in a circle, [size] across.
+class RoundFlag extends StatelessWidget {
+  const RoundFlag({super.key, required this.code, required this.size});
+
+  final String code;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ClipOval(
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: OverflowBox(
+        maxWidth: size * 4 / 3,
+        child: CountryFlag(code: code, width: size * 4 / 3),
+      ),
+    ),
+  );
+}
+
+/// The location as a row of flags: the chosen one large in the middle, in a
+/// ring, with its name below, and the fastest other countries small on both
+/// sides. Each opens the server list.
+class FlagStrip extends StatefulWidget {
+  const FlagStrip({
+    super.key,
+    required this.core,
+    required this.place,
+    required this.accent,
+    required this.textColor,
+    this.onTap,
+    this.small = 3,
+    this.big = 66,
+  });
+
+  final CoreController core;
+  final HomePlace place;
+  final Color accent;
+  final Color textColor;
+  final VoidCallback? onTap;
+
+  /// How many small flags at most on each side.
+  final int small;
+
+  /// The large flag's diameter.
+  final double big;
+
+  @override
+  State<FlagStrip> createState() => _FlagStripState();
+}
+
+class _FlagStripState extends State<FlagStrip> {
+  List<String> _codes = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await widget.core.call((api) => api.locations());
+      final found = [
+        for (final loc in list.locations)
+          if (!isRecommendedPlace(loc.code) && loc.code.length == 2) loc,
+      ];
+      found.sort((a, b) {
+        final da = a.answered ? a.pingMs : 1 << 30;
+        final db = b.answered ? b.pingMs : 1 << 30;
+        return da.compareTo(db);
+      });
+      if (mounted) setState(() => _codes = [for (final c in found) c.code]);
+    } catch (_) {
+      // No list yet: the large flag alone.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final current = widget.place.flag.toUpperCase();
+    final others = [
+      for (final c in _codes)
+        if (c.toUpperCase() != current) c,
+    ].take(widget.small * 2).toList();
+    final half = (others.length + 1) ~/ 2;
+    final left = others.take(half).toList();
+    final right = others.skip(half).toList();
+    Widget small(String code, double size) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Opacity(opacity: 0.85, child: RoundFlag(code: code, size: size)),
+    );
+    // Smaller the farther from the middle.
+    double sizeAt(int distance) => math.max(20, 36 - 5.0 * distance);
+    return InkWell(
+      onTap: widget.onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (var i = 0; i < left.length; i++)
+                  small(left[i], sizeAt(left.length - 1 - i)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: widget.accent.withValues(alpha: 0.75),
+                        width: 2.5,
+                      ),
+                    ),
+                    child: RoundFlag(code: widget.place.flag, size: widget.big),
+                  ),
+                ),
+                for (var i = 0; i < right.length; i++) small(right[i], sizeAt(i)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.place.name,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: widget.textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -273,6 +273,7 @@
   "updateAvailable": "新版本 {version} 已发布。",
   "download": "下载",
   "upload": "上传",
+  "connectionTime": "连接时长",
   "updateCheckFailed": "无法检查更新：{error}",
   "updateNow": "更新",
   "updateDownloading": "正在下载版本 {version}…",

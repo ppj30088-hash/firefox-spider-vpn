@@ -948,6 +948,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get upload => 'Yükleme';
 
   @override
+  String get connectionTime => 'Bağlantı süresi';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Güncellemeler kontrol edilemedi: $error';
   }

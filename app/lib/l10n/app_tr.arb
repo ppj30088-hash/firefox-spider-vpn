@@ -273,6 +273,7 @@
   "updateAvailable": "{version} sürümü mevcut.",
   "download": "İndir",
   "upload": "Yükleme",
+  "connectionTime": "Bağlantı süresi",
   "updateCheckFailed": "Güncellemeler kontrol edilemedi: {error}",
   "updateNow": "Güncelle",
   "updateDownloading": "{version} sürümü indiriliyor…",

@@ -273,6 +273,7 @@
   "updateAvailable": "সংস্করণ {version} পাওয়া যাচ্ছে।",
   "download": "ডাউনলোড",
   "upload": "আপলোড",
+  "connectionTime": "সংযোগের সময়",
   "updateCheckFailed": "আপডেট যাচাই করা যায়নি: {error}",
   "updateNow": "আপডেট করুন",
   "updateDownloading": "সংস্করণ {version} ডাউনলোড হচ্ছে…",

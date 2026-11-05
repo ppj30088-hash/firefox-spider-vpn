@@ -948,6 +948,9 @@ class AppLocalizationsAz extends AppLocalizations {
   String get upload => 'Yükləmə';
 
   @override
+  String get connectionTime => 'Bağlantı müddəti';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Yeniləmələri yoxlamaq mümkün olmadı: $error';
   }

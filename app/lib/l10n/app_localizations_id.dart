@@ -948,6 +948,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get upload => 'Unggah';
 
   @override
+  String get connectionTime => 'Durasi koneksi';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Tidak dapat memeriksa pembaruan: $error';
   }

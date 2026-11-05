@@ -308,6 +308,17 @@ class _DesktopHome extends StatelessWidget {
       ),
       child: Stack(
         children: [
+          // The world, faint, in the middle.
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 72, 32, 32),
+              child: Center(
+                child: WorldMap(
+                  color: p.text.withValues(alpha: p.dark ? 0.06 : 0.075),
+                ),
+              ),
+            ),
+          ),
           Positioned(
             top: -140,
             left: -120,
@@ -452,14 +463,22 @@ class _DesktopHome extends StatelessWidget {
         // the connection has lasted, above the button.
         if (wide) ...[
           Center(
-            child: _PlaceHeader(
-              palette: p,
+            child: FlagStrip(
+              core: core,
               place: place,
               accent: accent,
+              textColor: p.text,
               onTap: onOpenServers,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          Center(
+            child: Text(
+              l.connectionTime,
+              style: theme.textTheme.labelLarge?.copyWith(color: p.muted),
+            ),
+          ),
+          const SizedBox(height: 2),
           Center(
             child: ConnectedTimer(
               since: connected ? proxy?.startedAt : null,
@@ -722,57 +741,6 @@ class _DesktopHeader extends StatelessWidget {
             icon: const Icon(Icons.info_outline_rounded),
           ),
       ],
-    );
-  }
-}
-
-/// The location above the button: its flag in a ring, and its name.
-class _PlaceHeader extends StatelessWidget {
-  const _PlaceHeader({
-    required this.palette,
-    required this.place,
-    required this.accent,
-    this.onTap,
-  });
-
-  final _HomePalette palette;
-  final HomePlace place;
-  final Color accent;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: accent.withValues(alpha: 0.7), width: 2),
-              ),
-              child: ClipOval(child: CountryFlag(code: place.flag, width: 56)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              place.name,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: palette.text,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1481,6 +1449,15 @@ class _PhoneHome extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     return Stack(
       children: [
+        // The world, faint, behind the button.
+        Positioned.fill(
+          child: Align(
+            alignment: const Alignment(0, -0.25),
+            child: WorldMap(
+              color: p.text.withValues(alpha: p.dark ? 0.06 : 0.07),
+            ),
+          ),
+        ),
         // Soft lights in the state's color and two others.
         Positioned(
           top: -120,
@@ -1516,7 +1493,37 @@ class _PhoneHome extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              // The location as flags, and how long the connection has
+              // lasted, above the button.
+              Center(
+                child: FlagStrip(
+                  core: core,
+                  place: place,
+                  accent: accent,
+                  textColor: p.text,
+                  onTap: onOpenServers,
+                  small: 2,
+                  big: 56,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  l.connectionTime,
+                  style: theme.textTheme.labelMedium?.copyWith(color: p.muted),
+                ),
+              ),
+              Center(
+                child: ConnectedTimer(
+                  since: connected ? status.proxy?.startedAt : null,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: connected ? p.text : p.muted,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Center(
                 child: _PowerOrb(
                   palette: p,
@@ -1540,19 +1547,6 @@ class _PhoneHome extends StatelessWidget {
                   color: on ? accent : p.text,
                 ),
               ),
-              // How long the connection has lasted.
-              if (connected) ...[
-                const SizedBox(height: 4),
-                Center(
-                  child: ConnectedTimer(
-                    since: status.proxy?.startedAt,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: p.muted,
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 8),
               if (connected)
                 Wrap(
@@ -1676,7 +1670,34 @@ class _PhoneHome extends StatelessWidget {
                 connected: connected,
                 palette: p,
               ),
-              _HomeSpeed(palette: p, traffic: status.traffic, on: connected),
+              RateHistory(
+                core: core,
+                builder: (context, down, up, delays) => Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        palette: p,
+                        icon: Icons.arrow_downward_rounded,
+                        color: p.connected,
+                        title: l.download,
+                        value: formatRate(connected ? status.traffic?.downRate ?? 0 : 0),
+                        values: down,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        palette: p,
+                        icon: Icons.arrow_upward_rounded,
+                        color: const Color(0xFF4C8DFF),
+                        title: l.upload,
+                        value: formatRate(connected ? status.traffic?.upRate ?? 0 : 0),
+                        values: up,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               _PlaceCard(
                 palette: p,
@@ -1685,75 +1706,15 @@ class _PhoneHome extends StatelessWidget {
                 onTap: onOpenServers,
               ),
               const SizedBox(height: 12),
-              _HomeData(
-                status: status,
+              _UsageStatCard(
                 palette: p,
+                status: status,
                 settings: settings,
                 onTap: onOpenAccounts,
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-/// The speed now, download and upload, in two small cards under the state.
-class _HomeSpeed extends StatelessWidget {
-  const _HomeSpeed({
-    required this.palette,
-    required this.traffic,
-    required this.on,
-  });
-
-  final _HomePalette palette;
-  final Traffic? traffic;
-
-  /// The VPN carries the traffic: the speeds show, else they are zero.
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final p = palette;
-    Widget card(IconData icon, int rate) => Expanded(
-      child: _HomeCard(
-        palette: p,
-        compact: true,
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: p.text.withValues(alpha: 0.07),
-              ),
-              child: Icon(icon, size: 18, color: p.text),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                formatRate(on ? rate : 0),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: p.text,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return Row(
-      children: [
-        card(Icons.arrow_downward_rounded, traffic?.downRate ?? 0),
-        const SizedBox(width: 12),
-        card(Icons.arrow_upward_rounded, traffic?.upRate ?? 0),
       ],
     );
   }

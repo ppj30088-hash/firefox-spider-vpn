@@ -949,6 +949,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upload => 'Upload';
 
   @override
+  String get connectionTime => 'Connection time';
+
+  @override
   String updateCheckFailed(String error) {
     return 'Could not check for updates: $error';
   }

@@ -600,6 +600,7 @@
   },
   "download": "Download",
   "upload": "Upload",
+  "connectionTime": "Connection time",
   "updateCheckFailed": "Could not check for updates: {error}",
   "@updateCheckFailed": {
     "placeholders": {

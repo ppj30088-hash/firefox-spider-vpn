@@ -273,6 +273,7 @@
   "updateAvailable": "نسخه {version} منتشر شده است.",
   "download": "دانلود",
   "upload": "آپلود",
+  "connectionTime": "مدت اتصال",
   "updateCheckFailed": "بررسی به‌روزرسانی ممکن نشد: {error}",
   "updateNow": "به‌روزرسانی",
   "updateDownloading": "در حال دانلود نسخه {version}…",

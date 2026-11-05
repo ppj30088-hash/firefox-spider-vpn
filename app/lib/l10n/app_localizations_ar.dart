@@ -958,6 +958,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get upload => 'رفع';
 
   @override
+  String get connectionTime => 'مدة الاتصال';
+
+  @override
   String updateCheckFailed(String error) {
     return 'تعذّر التحقق من التحديثات: $error';
   }

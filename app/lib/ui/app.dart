@@ -292,6 +292,7 @@ class _ShellState extends State<Shell> {
               selected: menu.indexOf(page),
               onSelected: (i) => select(pages.indexOf(menu[i])),
               attention: needsAttention,
+              accountLabel: status?.activeAccount?.email.split('@').first ?? '',
               accountsSelected: page == _Page.accounts,
               onAccounts: () => setState(() {
                 _page = _Page.accounts;
@@ -421,6 +422,7 @@ class _PillNav extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     required this.attention,
+    required this.accountLabel,
     required this.accountsSelected,
     required this.onAccounts,
   });
@@ -432,6 +434,9 @@ class _PillNav extends StatelessWidget {
 
   /// Accounts that need signing in again.
   final int attention;
+
+  /// The account's name under its picture ("Accounts" when empty).
+  final String accountLabel;
   final bool accountsSelected;
   final VoidCallback onAccounts;
 
@@ -551,7 +556,7 @@ class _PillNav extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          l.navAccounts,
+                          accountLabel.isEmpty ? l.navAccounts : accountLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
