@@ -42,10 +42,6 @@
 
 > هنگام نصب روی اندروید ممکن است گوگل هشدار دهد، چون برنامه از Play Store نیست. روی «More details» و بعد «Install anyway» بزنید.
 
-## 🛠️ ساخت و انتشار
-
-هر بار که نسخهٔ `app/pubspec.yaml` بالا برود و روی شاخهٔ `main` push شود، GitHub Actions برنامه را برای هر چهار سیستم می‌سازد و خودکار در Releases منتشر می‌کند.
-
 </div>
 
 ---
@@ -67,10 +63,6 @@
 ### Download
 
 Get the latest version from [Releases](https://github.com/ppj30088-hash/firefox-spider-vpn/releases/latest): Android (arm64-v8a, armeabi-v7a, or universal), Windows (64-bit installer or portable zip), macOS (dmg), Linux (x64 or arm64).
-
-### Build and release
-
-Raise the version in `app/pubspec.yaml` and push to `main`: GitHub Actions builds all four systems and publishes the release by itself.
 
 ---
 
