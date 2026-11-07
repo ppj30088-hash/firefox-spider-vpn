@@ -493,6 +493,17 @@ class _DesktopHome extends StatelessWidget {
               accent: accent,
               textColor: p.text,
               onTap: onOpenServers,
+              // A small flag: that country, and connect.
+              onPick: (ctx, code) async {
+                if (status.totalAccounts == 0) {
+                  _openAccounts(ctx, core, settings, onOpenAccounts);
+                  return;
+                }
+                await runShowingErrors(ctx, () async {
+                  await core.setLocation(code);
+                  if (!on) await _power(true);
+                });
+              },
             ),
           ),
           const SizedBox(height: 14),
@@ -789,6 +800,9 @@ class _DesktopHeader extends StatelessWidget {
             onPressed: onAbout,
             icon: const Icon(Icons.info_outline_rounded),
           ),
+        const SizedBox(width: 8),
+        // At the left in Persian, at the right in the others.
+        const TelegramButton(size: 40),
       ],
     );
   }
@@ -1594,13 +1608,18 @@ class _PhoneHome extends StatelessWidget {
                 children: [
                   const AppLogo(size: 28),
                   const SizedBox(width: 8),
-                  Text(
-                    l.appTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: p.text,
+                  Expanded(
+                    child: Text(
+                      l.appTitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: p.text,
+                      ),
                     ),
                   ),
+                  // At the left in Persian, at the right in the others.
+                  const TelegramButton(size: 36),
                 ],
               ),
               const Spacer(),
@@ -1615,6 +1634,17 @@ class _PhoneHome extends StatelessWidget {
                     accent: accent,
                     textColor: p.text,
                     onTap: onOpenServers,
+                    // A small flag: that country, and connect.
+                    onPick: (ctx, code) async {
+                      if (status.totalAccounts == 0) {
+                        _openAccounts(ctx, core, settings, onOpenAccounts);
+                        return;
+                      }
+                      await runShowingErrors(ctx, () async {
+                        await core.setLocation(code);
+                        if (!on) await _toggle(false);
+                      });
+                    },
                     small: 2,
                     big: 56,
                   ),

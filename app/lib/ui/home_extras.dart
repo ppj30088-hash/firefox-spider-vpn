@@ -255,9 +255,70 @@ class RoundFlag extends StatelessWidget {
   );
 }
 
+/// The channel the Telegram button opens.
+const telegramUrl = 'https://t.me/SPiDER_VPN1';
+
+/// A round Telegram button, its paper plane in white on Telegram's blue; it
+/// opens [telegramUrl]. Put at the end of a row, it sits at the left of a
+/// right-to-left language (Persian) and at the right of the others.
+class TelegramButton extends StatelessWidget {
+  const TelegramButton({super.key, this.size = 40});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Telegram',
+    child: Material(
+      color: const Color(0xFF27A7E7),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => openLink(context, telegramUrl),
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: CustomPaint(painter: _PlanePainter()),
+        ),
+      ),
+    ),
+  );
+}
+
+class _PlanePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    Offset at(double x, double y) => Offset(x * size.width, y * size.height);
+    final plane = Path()
+      ..moveTo(at(0.20, 0.50).dx, at(0.20, 0.50).dy)
+      ..lineTo(at(0.78, 0.27).dx, at(0.78, 0.27).dy)
+      ..lineTo(at(0.66, 0.75).dx, at(0.66, 0.75).dy)
+      ..lineTo(at(0.50, 0.62).dx, at(0.50, 0.62).dy)
+      ..lineTo(at(0.41, 0.72).dx, at(0.41, 0.72).dy)
+      ..lineTo(at(0.40, 0.58).dx, at(0.40, 0.58).dy)
+      ..close();
+    canvas.drawPath(plane, Paint()..color = Colors.white);
+    // The fold of the plane, a thin line in the button's blue.
+    canvas.drawLine(
+      at(0.40, 0.58),
+      at(0.70, 0.38),
+      Paint()
+        ..color = const Color(0xFF27A7E7)
+        ..strokeWidth = size.width * 0.035
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanePainter old) => false;
+}
+
 /// The location as a row of flags: the chosen one large in the middle, in a
 /// ring, with its name below, and the fastest other countries small on both
-/// sides. Each opens the server list.
+/// sides. A tap on a small flag chooses that country and connects to it;
+/// a swipe to the right takes the country at the right of the large flag, a
+/// swipe to the left the one at its left. The large flag and the name open
+/// the server list.
 class FlagStrip extends StatefulWidget {
   const FlagStrip({
     super.key,
@@ -266,6 +327,7 @@ class FlagStrip extends StatefulWidget {
     required this.accent,
     required this.textColor,
     this.onTap,
+    this.onPick,
     this.small = 3,
     this.big = 66,
   });
@@ -274,7 +336,12 @@ class FlagStrip extends StatefulWidget {
   final HomePlace place;
   final Color accent;
   final Color textColor;
+
+  /// Opens the server list.
   final VoidCallback? onTap;
+
+  /// Chooses [code] and connects to it (the home page knows how).
+  final Future<void> Function(BuildContext context, String code)? onPick;
 
   /// How many small flags at most on each side.
   final int small;
@@ -288,6 +355,7 @@ class FlagStrip extends StatefulWidget {
 
 class _FlagStripState extends State<FlagStrip> {
   List<String> _codes = const [];
+  bool _busy = false;
 
   @override
   void initState() {
@@ -313,6 +381,20 @@ class _FlagStripState extends State<FlagStrip> {
     }
   }
 
+  Future<void> _pick(String code) async {
+    final pick = widget.onPick;
+    if (pick == null || _busy) {
+      widget.onTap?.call();
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await pick(context, code);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -325,54 +407,88 @@ class _FlagStripState extends State<FlagStrip> {
     final left = others.take(half).toList();
     final right = others.skip(half).toList();
     Widget small(String code, double size) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: Opacity(opacity: 0.85, child: RoundFlag(code: code, size: size)),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: InkResponse(
+        onTap: () => _pick(code),
+        radius: size,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Opacity(
+            opacity: 0.85,
+            child: RoundFlag(code: code, size: size),
+          ),
+        ),
+      ),
     );
     // Smaller the farther from the middle.
     double sizeAt(int distance) => math.max(20, 36 - 5.0 * distance);
-    return InkWell(
-      onTap: widget.onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      // A swipe to the right takes the country at the right of the large
+      // flag, a swipe to the left the one at its left.
+      onHorizontalDragEnd: (d) {
+        final v = d.primaryVelocity ?? 0;
+        if (v > 250 && right.isNotEmpty) {
+          _pick(right.first);
+        } else if (v < -250 && left.isNotEmpty) {
+          _pick(left.last);
+        }
+      },
+      child: Opacity(
+        opacity: _busy ? 0.55 : 1,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                for (var i = 0; i < left.length; i++)
-                  small(left[i], sizeAt(left.length - 1 - i)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: widget.accent.withValues(alpha: 0.75),
-                        width: 2.5,
+                // Left is left in every language.
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < left.length; i++)
+                        small(left[i], sizeAt(left.length - 1 - i)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: widget.accent.withValues(alpha: 0.75),
+                              width: 2.5,
+                            ),
+                          ),
+                          child: RoundFlag(
+                            code: widget.place.flag,
+                            size: widget.big,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: RoundFlag(code: widget.place.flag, size: widget.big),
+                      for (var i = 0; i < right.length; i++)
+                        small(right[i], sizeAt(i)),
+                    ],
                   ),
                 ),
-                for (var i = 0; i < right.length; i++) small(right[i], sizeAt(i)),
+                const SizedBox(height: 8),
+                Text(
+                  widget.place.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: widget.textColor,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.place.name,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: widget.textColor,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
