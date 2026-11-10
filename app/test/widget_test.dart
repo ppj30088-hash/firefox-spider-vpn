@@ -10,6 +10,8 @@ import 'package:arman_vpn/core/core_controller.dart';
 import 'package:arman_vpn/core/models.dart';
 import 'package:arman_vpn/core/tun_service.dart';
 import 'package:arman_vpn/core/updates.dart';
+import 'package:arman_vpn/core/announcements.dart';
+import 'package:arman_vpn/core/android_core.dart';
 import 'package:arman_vpn/desktop/close_dialog.dart';
 import 'package:arman_vpn/l10n/app_localizations.dart';
 import 'package:arman_vpn/ui/app.dart';
@@ -195,11 +197,16 @@ class FakeApi implements CoreApi {
   /// asked of it.
   Map<String, Object?>? update;
   final downloads = <String>[];
+  final downloadSources = <Map<String, Object?>?>[];
   final installs = <(String, List<String>)>[];
 
   @override
-  Future<void> downloadUpdate(String version) async {
+  Future<void> downloadUpdate(
+    String version, {
+    Map<String, Object?>? source,
+  }) async {
     downloads.add(version);
+    downloadSources.add(source);
     update = {
       'state': 'downloading',
       'version': version,
@@ -965,6 +972,76 @@ void main() {
     core.dispose();
   });
 
+  testWidgets(
+    'Android first-run routing saves the detected country and keeps English',
+    (tester) async {
+      stillMotion(tester);
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final api = FakeApi();
+      final core = CoreController(
+        () async => api,
+        pollInterval: const Duration(hours: 1),
+      );
+      final settings = AppSettings()
+        ..firstRun = true
+        ..language = 'en'
+        ..firstRunRegion = 'ir';
+      await tester.pumpWidget(VpnApp(core: core, settings: settings));
+      core.start();
+      await tester.pumpAndSettle();
+      expect(find.text('Iran'), findsOneWidget);
+      await tester.tap(find.text('Start'));
+      await tester.pumpAndSettle();
+      expect(settings.language, 'en');
+      expect(settings.firstRun, isFalse);
+      expect(api.config['routing'], {'enabled': true, 'region': 'ir'});
+      await tester.pumpWidget(const SizedBox());
+      core.dispose();
+    },
+  );
+
+  testWidgets(
+    'Android first-run country stays independent of language and permits a manual region',
+    (tester) async {
+      stillMotion(tester);
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final api = FakeApi();
+      final core = CoreController(
+        () async => api,
+        pollInterval: const Duration(hours: 1),
+      );
+      final settings = AppSettings()
+        ..firstRun = true
+        ..language = 'en'
+        ..firstRunRegion = 'tr';
+      await tester.pumpWidget(VpnApp(core: core, settings: settings));
+      core.start();
+      await tester.pumpAndSettle();
+      expect(find.text('Turkey'), findsOneWidget);
+      await tester.tap(find.text('English'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('فارسی').last);
+      await tester.pumpAndSettle();
+      expect(find.text('ترکیه'), findsOneWidget);
+      expect(find.text('ایران'), findsNothing);
+      await tester.tap(find.text('ترکیه'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ایران').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('شروع'));
+      await tester.pumpAndSettle();
+      expect(settings.language, 'fa');
+      expect(settings.firstRun, isFalse);
+      expect(api.config['routing'], {'enabled': true, 'region': 'ir'});
+      await tester.pumpWidget(const SizedBox());
+      core.dispose();
+    },
+  );
+
   testWidgets('offers another port when the proxy port is taken', (
     tester,
   ) async {
@@ -1403,7 +1480,8 @@ void main() {
     await tester.tap(find.text('Relay server'));
     await tester.pumpAndSettle();
 
-    expect(find.text('If Mozilla is blocked'), findsOneWidget);
+    expect(find.text('Shared relay'), findsOneWidget);
+    expect(find.text('Personal relay'), findsOneWidget);
     final field = find.widgetWithText(TextField, 'Relay server');
     // Save goes under the field on a computer too: long addresses need the width.
     final save = find.widgetWithText(FilledButton, 'Save');
@@ -1425,6 +1503,79 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     core.dispose();
   });
+
+  for (final size in [const Size(430, 1000), const Size(1200, 1400)]) {
+    testWidgets('shared and personal relay switches are independent at $size', (
+      tester,
+    ) async {
+      stillMotion(tester);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final api = FakeApi();
+      api.config['network'] = <String, Object?>{
+        'api_relay_enabled': false,
+        'shared_relay_enabled': true,
+        'api_relay': '',
+      };
+      final core = CoreController(
+        () async => api,
+        pollInterval: const Duration(hours: 1),
+      );
+      await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
+      core.start();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Relay server'));
+      await tester.pumpAndSettle();
+      final shared = find.descendant(
+        of: find.widgetWithText(Panel, 'Shared relay'),
+        matching: find.byType(Switch),
+      );
+      final personal = find.descendant(
+        of: find.widgetWithText(Panel, 'Personal relay'),
+        matching: find.byType(Switch),
+      );
+      Map<String, Object?> network() =>
+          api.config['network']! as Map<String, Object?>;
+      expect(tester.widget<Switch>(shared).value, isTrue);
+      expect(tester.widget<Switch>(shared).onChanged, isNotNull);
+      expect(tester.widget<Switch>(personal).value, isFalse);
+      expect(tester.widget<Switch>(personal).onChanged, isNull);
+      await tester.tap(shared);
+      await tester.pumpAndSettle();
+      expect(network()['shared_relay_enabled'], isFalse);
+      expect(network()['api_relay_enabled'], isFalse);
+      await tester.tap(shared);
+      await tester.pumpAndSettle();
+      expect(network()['shared_relay_enabled'], isTrue);
+      final field = find.widgetWithText(TextField, 'Relay server');
+      await tester.ensureVisible(field);
+      await tester.enterText(field, 'https://personal.example/');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(personal);
+      await tester.tap(personal);
+      await tester.pumpAndSettle();
+      expect(network()['api_relay_enabled'], isTrue);
+      expect(network()['shared_relay_enabled'], isTrue);
+      await tester.ensureVisible(shared);
+      await tester.tap(shared);
+      await tester.pumpAndSettle();
+      expect(network()['shared_relay_enabled'], isFalse);
+      expect(network()['api_relay_enabled'], isTrue);
+      await tester.ensureVisible(personal);
+      await tester.tap(personal);
+      await tester.pumpAndSettle();
+      expect(network()['api_relay_enabled'], isFalse);
+      expect(network()['shared_relay_enabled'], isFalse);
+      expect(network()['api_relay'], 'https://personal.example/');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      core.dispose();
+    });
+  }
 
   testWidgets('the IP version is Auto until another is chosen', (tester) async {
     stillMotion(tester);
@@ -2624,6 +2775,121 @@ void main() {
       core.dispose();
     }
 
+    testWidgets(
+      'an announcement opens the in-app update section and acknowledges its action',
+      (tester) async {
+        final (_, core, _) = await pumpUpdates(
+          tester,
+          found: const Release('9.9.9', page),
+        );
+        Updates.receiveAnnouncements(
+          parseAnnouncements([
+            {
+              'id': 'update-action',
+              'enabled': true,
+              'priority': 100,
+              'dismissible': false,
+              'title': {'en': 'Important service notice'},
+              'message': {'en': 'Please check the available update.'},
+              'display': {'mode': 'until_acknowledged'},
+              'action': {
+                'type': 'navigate',
+                'target': 'updates',
+                'label': {'en': 'Go to updates'},
+              },
+            },
+          ]),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Important service notice'), findsOneWidget);
+        await tester.tap(find.text('Go to updates'));
+        await tester.pumpAndSettle();
+        expect(find.text('Important service notice'), findsNothing);
+        expect(
+          find.widgetWithText(OutlinedButton, 'Check for updates'),
+          findsOneWidget,
+        );
+        expect(find.text('Download'), findsOneWidget);
+        expect(
+          Updates
+              .announcements
+              .value!
+              .settings
+              .announcementAcknowledged['update-action'],
+          1,
+        );
+        await done(tester, core);
+      },
+    );
+
+    testWidgets(
+      'Android manual checks do not postpone daily checks or lose newer offers',
+      (tester) async {
+        final (_, core, settings) = await pumpUpdates(tester);
+        final lastDailyCheck = DateTime(2026, 11, 8);
+        settings.update(updateCheckedAt: lastDailyCheck);
+        Updates.found(
+          const Release('9.9.9', page),
+          check: UpdateCheck.manual,
+          os: 'android',
+        );
+        expect(settings.updateCheckedAt, lastDailyCheck);
+        expect(settings.updateVersion, '9.9.9');
+
+        Updates.found(
+          const Release(
+            '9.9.8',
+            'https://example.invalid/9.9.8',
+            mandatory: true,
+          ),
+          os: 'android',
+        );
+        expect(Updates.available.value?.version, '9.9.9');
+        expect(Updates.available.value?.mandatory, isTrue);
+        expect(settings.updateCheckedAt!.isAfter(lastDailyCheck), isTrue);
+        expect(settings.updateVersion, '9.9.9');
+        expect(releaseFromJson(settings.updateDetails)?.version, '9.9.9');
+
+        Updates.found(null, os: 'android');
+        expect(Updates.available.value?.version, '9.9.9');
+        Updates.found(null, check: UpdateCheck.manual, os: 'android');
+        expect(Updates.available.value, isNull);
+        expect(settings.updateVersion, isEmpty);
+        await done(tester, core);
+      },
+    );
+
+    testWidgets(
+      'a long Persian announcement fits a narrow phone and can be closed',
+      (tester) async {
+        final (_, core, settings) = await pumpUpdates(tester);
+        tester.view.physicalSize = const Size(390, 700);
+        settings.update(language: 'fa');
+        Updates.receiveAnnouncements(
+          parseAnnouncements([
+            {
+              'id': 'persian',
+              'enabled': true,
+              'title': {'fa': 'اطلاعیه سرویس'},
+              'message': {
+                'fa': List.filled(
+                  12,
+                  'این یک پیام نمونه برای بررسی نمایش اطلاعیه در برنامه است.',
+                ).join(' '),
+              },
+            },
+          ]),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('اطلاعیه سرویس'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.byTooltip('بستن'));
+        await tester.pumpAndSettle();
+        expect(find.text('اطلاعیه سرویس'), findsNothing);
+        await done(tester, core);
+      },
+    );
+
     testWidgets('a copy that does not update itself offers the download', (
       tester,
     ) async {
@@ -2636,6 +2902,69 @@ void main() {
       expect(find.text('Update'), findsNothing);
       await done(tester, core);
     });
+
+    testWidgets(
+      'mandatory updates cannot be dismissed and do not block connections',
+      (tester) async {
+        final (api, core, settings) = await pumpUpdates(
+          tester,
+          found: const Release('9.9.9', page, mandatory: true),
+        );
+        settings.update(dismissedUpdate: '9.9.9');
+        await tester.pump();
+        expect(
+          find.text('Please update to version 9.9.9. This update is required.'),
+          findsOneWidget,
+        );
+        expect(find.byTooltip('Dismiss'), findsNothing);
+        expect(api.on, isTrue);
+        await core.setOn(false);
+        await core.setOn(true);
+        expect(api.on, isTrue);
+        await done(tester, core);
+      },
+    );
+
+    testWidgets('background updates pass the manifest archive to the core', (
+      tester,
+    ) async {
+      final (api, core, _) = await pumpUpdates(
+        tester,
+        update: {'state': 'idle'},
+        found: const Release(
+          '9.9.9',
+          page,
+          checksumsUrl: 'https://cdn.example/sums',
+          signatureUrl: 'https://cdn.example/signature',
+          downloads: {
+            'archive-x64': ReleaseDownload(
+              'Arman-VPN-Windows-x64.zip',
+              'https://cdn.example/package',
+            ),
+            'archive': ReleaseDownload(
+              'Arman-VPN-Windows-x64.zip',
+              'https://cdn.example/package',
+            ),
+            'amd64': ReleaseDownload(
+              'Arman-VPN-Windows-x64.zip',
+              'https://cdn.example/package',
+            ),
+            'arm64': ReleaseDownload(
+              'Arman-VPN-Windows-x64.zip',
+              'https://cdn.example/package',
+            ),
+          },
+        ),
+      );
+      await tester.pump();
+      expect(api.downloadSources.single, {
+        'file': 'Arman-VPN-Windows-x64.zip',
+        'url': 'https://cdn.example/package',
+        'checksums_url': 'https://cdn.example/sums',
+        'signature_url': 'https://cdn.example/signature',
+      });
+      await done(tester, core);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
 
     testWidgets('a version found downloads by itself; Update installs it', (
       tester,

@@ -959,6 +959,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get sectionBypass => 'Nếu Mozilla bị chặn';
 
   @override
+  String get sharedRelay => 'Chuyển tiếp dùng chung';
+
+  @override
+  String get sharedRelayHint =>
+      'Dùng máy chủ chuyển tiếp dùng chung của ứng dụng nếu Mozilla chặn khu vực của bạn. Máy chủ chuyển tiếp cá nhân đang bật được ưu tiên.';
+
+  @override
+  String get personalRelay => 'Chuyển tiếp cá nhân';
+
+  @override
   String get apiRelay => 'Máy chủ chuyển tiếp';
 
   @override
@@ -1101,6 +1111,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String updateAvailable(String version) {
     return 'Đã có phiên bản mới $version.';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return 'Vui lòng cập nhật lên phiên bản $version. Bản cập nhật này là bắt buộc.';
   }
 
   @override

@@ -952,6 +952,16 @@ class AppLocalizationsFa extends AppLocalizations {
   String get sectionBypass => 'اگر موزیلا مسدود است';
 
   @override
+  String get sharedRelay => 'رله اشتراکی';
+
+  @override
+  String get sharedRelayHint =>
+      'اگر موزیلا دسترسی از منطقه شما را محدود کرده، از رله‌های اشتراکی برنامه استفاده می‌شود. رله شخصیِ فعال در اولویت است.';
+
+  @override
+  String get personalRelay => 'رله شخصی';
+
+  @override
   String get apiRelay => 'سرور رله';
 
   @override
@@ -1095,6 +1105,11 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String updateAvailable(String version) {
     return 'نسخه $version منتشر شده است.';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return 'لطفاً به نسخه $version به‌روزرسانی کنید. این به‌روزرسانی ضروری است.';
   }
 
   @override

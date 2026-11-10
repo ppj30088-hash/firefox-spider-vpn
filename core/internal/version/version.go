@@ -12,7 +12,7 @@ import (
 //	-ldflags "-X github.com/armanlife/arman-vpn-client/core/internal/version.Current=1.1.0"
 //
 // "1.0.0" is the default, for a build that sets nothing.
-var Current = "1.0.0"
+var Current = "1.1.0"
 
 // Newer reports whether version a is newer than b ("major.minor.patch";
 // missing or unparsable parts count as 0).

@@ -10,6 +10,7 @@ import '../core/core_controller.dart';
 import '../core/models.dart';
 import '../l10n/app_localizations.dart';
 import 'about_page.dart';
+import 'announcement_panel.dart';
 import 'accounts_page.dart';
 import 'focus_ring.dart';
 import 'format.dart';
@@ -28,11 +29,10 @@ ThemeData _theme(Brightness brightness, Locale locale) {
     brightness: brightness,
   );
   final dark = brightness == Brightness.dark;
-  // Vazirmatn for Persian and Arabic; the system font (Segoe UI)
-  // otherwise. Styles set here name it too, or they would fall back to the
-  // system font.
+  // Bundled Inter for English, Vazirmatn for Persian and Arabic, and the
+  // platform's typography for the remaining languages.
   final font = languageFont(locale.languageCode);
-  return ThemeData(
+  final theme = ThemeData(
     colorScheme: scheme,
     fontFamily: font,
     scaffoldBackgroundColor: dark
@@ -46,17 +46,18 @@ ThemeData _theme(Brightness brightness, Locale locale) {
         side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.4)),
       ),
     ),
+  );
+  return theme.copyWith(
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: dark ? const Color(0xFF15161D) : const Color(0xFFECECF4),
-      // The menu's names semi-bold, the open page's bold.
-      selectedLabelTextStyle: TextStyle(
-        fontFamily: font,
+      // NavigationRail replaces DefaultTextStyle, so retain the resolved
+      // platform font instead of letting a null family choose a fallback.
+      selectedLabelTextStyle: theme.textTheme.labelLarge!.copyWith(
         fontSize: 15.5,
         fontWeight: FontWeight.w700,
         color: scheme.onSurface,
       ),
-      unselectedLabelTextStyle: TextStyle(
-        fontFamily: font,
+      unselectedLabelTextStyle: theme.textTheme.labelLarge!.copyWith(
         fontSize: 15.5,
         fontWeight: FontWeight.w600,
         color: scheme.onSurfaceVariant,
@@ -162,6 +163,26 @@ class _ShellState extends State<Shell> {
   /// The settings section the home page opened (Connection), until another
   /// page is chosen.
   SettingsSection? _settingsOpening;
+
+  @override
+  void initState() {
+    super.initState();
+    AndroidCore.homeRequests.addListener(_openHome);
+  }
+
+  void _openHome() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() {
+      _page = _Page.overview;
+      _settingsOpening = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    AndroidCore.homeRequests.removeListener(_openHome);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -295,38 +316,42 @@ class _ShellState extends State<Shell> {
         );
       }
       return Scaffold(
-        body: Row(
-          children: [
-            // Home, Settings and Logs; the account at the bottom. The server
-            // list and About open from the home page.
-            _PillNav(
-              items: [
-                for (final pg in menu) items[pages.indexOf(pg)],
-              ],
-              selected: menu.indexOf(page),
-              onSelected: (i) => select(pages.indexOf(menu[i])),
-              attention: needsAttention,
-              accountLabel: status?.activeAccount?.email.split('@').first ?? '',
-              accountsSelected: page == _Page.accounts,
-              onAccounts: () => setState(() {
-                _page = _Page.accounts;
-                _settingsOpening = null;
-              }),
-            ),
-            // A maximized window: the pages stay as wide as reads well; the
-            // home page, centered by itself, keeps its colors to the edges.
-            Expanded(
-              child: page == _Page.overview || status == null
-                  ? content
-                  : Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        child: content,
+        body: AnnouncementOverlay(
+          settings: widget.settings,
+          onOpenUpdates: () => setState(() => _page = _Page.about),
+          child: Row(
+            children: [
+              // Home, Settings and Logs; the account at the bottom. The server
+              // list and About open from the home page.
+              _PillNav(
+                items: [
+                  for (final pg in menu) items[pages.indexOf(pg)],
+                ],
+                selected: menu.indexOf(page),
+                onSelected: (i) => select(pages.indexOf(menu[i])),
+                attention: needsAttention,
+                accountLabel: status?.activeAccount?.email.split('@').first ?? '',
+                accountsSelected: page == _Page.accounts,
+                onAccounts: () => setState(() {
+                  _page = _Page.accounts;
+                  _settingsOpening = null;
+                }),
+              ),
+              // A maximized window: the pages stay as wide as reads well; the
+              // home page, centered by itself, keeps its colors to the edges.
+              Expanded(
+                child: page == _Page.overview || status == null
+                    ? content
+                    : Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1000),
+                          child: content,
+                        ),
                       ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       );
     },

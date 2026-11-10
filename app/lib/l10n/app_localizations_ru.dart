@@ -963,6 +963,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionBypass => 'Если Mozilla заблокирована';
 
   @override
+  String get sharedRelay => 'Общий ретранслятор';
+
+  @override
+  String get sharedRelayHint =>
+      'Использовать общие ретрансляторы приложения, если Mozilla блокирует ваш регион. Включённый личный ретранслятор имеет приоритет.';
+
+  @override
+  String get personalRelay => 'Личный ретранслятор';
+
+  @override
   String get apiRelay => 'Сервер-ретранслятор';
 
   @override
@@ -1106,6 +1116,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String updateAvailable(String version) {
     return 'Доступна версия $version.';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return 'Обновите приложение до версии $version. Это обновление необходимо.';
   }
 
   @override

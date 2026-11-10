@@ -1292,7 +1292,7 @@ function renderSignIn(view) {
       // browser sign-in, moved over by its data folder.
       if (view.error_code === "blocked") {
         message.replaceChildren(
-          el("span", { text: "Tip: sign in with the browser in the Arman VPN app, then copy that device's data folder to this machine." }),
+          el("span", { text: "Tip: sign in with the browser in the spider firefox vpn app, then copy that device's data folder to this machine." }),
           el("a", {
             class: "btn primary",
             style: "margin-top:10px; width:fit-content",

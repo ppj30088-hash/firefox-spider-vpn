@@ -931,6 +931,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sectionBypass => '如果 Mozilla 被封锁';
 
   @override
+  String get sharedRelay => '共享中继';
+
+  @override
+  String get sharedRelayHint => '如果 Mozilla 屏蔽了你所在的地区，则使用应用的共享中继。已启用的个人中继优先。';
+
+  @override
+  String get personalRelay => '个人中继';
+
+  @override
   String get apiRelay => '中继服务器';
 
   @override
@@ -1070,6 +1079,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String updateAvailable(String version) {
     return '新版本 $version 已发布。';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return '请更新至 $version 版本。此更新为必要更新。';
   }
 
   @override
@@ -2514,6 +2528,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get sectionBypass => '如果 Mozilla 被封鎖';
 
   @override
+  String get sharedRelay => '共用中繼';
+
+  @override
+  String get sharedRelayHint => '如果 Mozilla 封鎖了你所在的地區，則使用應用程式的共用中繼。已啟用的個人中繼優先。';
+
+  @override
+  String get personalRelay => '個人中繼';
+
+  @override
   String get apiRelay => '中繼伺服器';
 
   @override
@@ -2653,6 +2676,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String updateAvailable(String version) {
     return '已有新版本 $version。';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return '請更新至 $version 版本。此更新為必要更新。';
   }
 
   @override

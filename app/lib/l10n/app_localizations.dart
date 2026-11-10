@@ -1773,6 +1773,24 @@ abstract class AppLocalizations {
   /// **'If Mozilla is blocked'**
   String get sectionBypass;
 
+  /// No description provided for @sharedRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared relay'**
+  String get sharedRelay;
+
+  /// No description provided for @sharedRelayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the app\'s shared relays if Mozilla blocks your region. An enabled personal relay takes priority.'**
+  String get sharedRelayHint;
+
+  /// No description provided for @personalRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal relay'**
+  String get personalRelay;
+
   /// No description provided for @apiRelay.
   ///
   /// In en, this message translates to:
@@ -2036,6 +2054,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version {version} is available.'**
   String updateAvailable(String version);
+
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please update to version {version}. This update is required.'**
+  String updateRequired(String version);
 
   /// No description provided for @download.
   ///

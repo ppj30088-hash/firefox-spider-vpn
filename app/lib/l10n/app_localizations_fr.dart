@@ -968,6 +968,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sectionBypass => 'Si Mozilla est bloqué';
 
   @override
+  String get sharedRelay => 'Relais partagé';
+
+  @override
+  String get sharedRelayHint =>
+      'Utiliser les relais partagés de l’application si Mozilla bloque votre région. Un relais personnel activé est prioritaire.';
+
+  @override
+  String get personalRelay => 'Relais personnel';
+
+  @override
   String get apiRelay => 'Serveur relais';
 
   @override
@@ -1111,6 +1121,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String updateAvailable(String version) {
     return 'La version $version est disponible.';
+  }
+
+  @override
+  String updateRequired(String version) {
+    return 'Veuillez passer à la version $version. Cette mise à jour est nécessaire.';
   }
 
   @override

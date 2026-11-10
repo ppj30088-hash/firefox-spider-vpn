@@ -26,12 +26,13 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    # A change to the documentation alone (READMEs, docs/, screenshots)
+    # A change to Markdown or documentation images alone
     # runs nothing; GitHub does not apply this filter to tags, so a release
     # always builds.
-    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
+    # Executable relay examples under docs/relay still run the checks.
+    paths-ignore: ['**.md', 'docs/images/**', 'docs/screenshots/**', 'docs/readme/**', 'LICENSE']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
+    paths-ignore: ['**.md', 'docs/images/**', 'docs/screenshots/**', 'docs/readme/**', 'LICENSE']
   workflow_dispatch:
 
 permissions:
@@ -132,6 +133,12 @@ jobs:
           # The TUN stack's tests need sing-tun's gVisor stack.
           go vet -tags with_gvisor ./internal/tunstack/
           go test -tags with_gvisor ./internal/tunstack/
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Relay worker syntax
+        run: node --check docs/relay/cloudflare/worker.js
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -488,7 +495,10 @@ jobs:
           ls
       - name: Checksums
         working-directory: release
-        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          printf '# Arman VPN version: %s\n' "${{ needs.test.outputs.version }}" >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
       # The desktop apps install a new version only when the update key
       # signed this list (core/internal/update); without the key (the
       # secret FIREFOX_VPN_SIGNING_KEY) they do not update by themselves.
