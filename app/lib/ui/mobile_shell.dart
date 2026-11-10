@@ -11,6 +11,7 @@ import 'announcement_panel.dart';
 import 'accounts_page.dart';
 import 'logs_page.dart';
 import 'overview_page.dart';
+import 'pill_nav.dart';
 import 'servers_page.dart';
 import 'settings_page.dart';
 import 'widgets.dart';
@@ -89,12 +90,11 @@ class _MobileShellState extends State<MobileShell> {
     final l = AppLocalizations.of(context);
     final core = widget.core;
     final settings = widget.settings;
-    void openServers() =>
-        _push(l.navServers, () => ServersPage(core: core, settings: settings));
-    void openAccounts() => _push(
-      l.navAccounts,
-      () => AccountsPage(core: core, settings: settings),
-    );
+    final needsAttention = (core.accounts?.accounts ?? const [])
+        .where((a) => a.enabled && a.needsSignIn)
+        .length;
+    void openServers() => setState(() => _tab = 1);
+    void openAccounts() => setState(() => _tab = 2);
     void openConnection() => _push(
       l.sectionConnection,
       () => SettingsPage(
@@ -124,6 +124,12 @@ class _MobileShellState extends State<MobileShell> {
             phone: true,
           ),
           1 => _readable(
+            ServersPage(core: core, settings: settings),
+          ),
+          2 => _readable(
+            AccountsPage(core: core, settings: settings),
+          ),
+          3 => _readable(
             _SettingsList(
               onOpenServers: openServers,
               onOpenAccounts: openAccounts,
@@ -150,7 +156,16 @@ class _MobileShellState extends State<MobileShell> {
             child: Column(
               children: [
                 ?widget.banner,
-                Expanded(child: page),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    transitionBuilder: PillNavBar.swapTransition,
+                    child: KeyedSubtree(
+                      key: ValueKey(_tab),
+                      child: page,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -162,61 +177,44 @@ class _MobileShellState extends State<MobileShell> {
               _tab == 0 &&
               widget.noCore == null &&
               Theme.of(context).brightness == Brightness.dark,
-          // A dark capsule floating above the bottom edge, the chosen tab lit
-          // in green (the computer's side menu, turned to lie down).
+          // A dark capsule floating above the bottom edge; the chosen tab
+          // grows into a green pill and its name slides out.
           child: SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(34),
-                child: NavigationBarTheme(
-                  data: NavigationBarThemeData(
-                    height: 68,
-                    backgroundColor: const Color(0xFF0F0F13),
-                    surfaceTintColor: Colors.transparent,
-                    indicatorColor: const Color(0xFF1FBF84),
-                    iconTheme: WidgetStateProperty.resolveWith(
-                      (states) => IconThemeData(
-                        color: states.contains(WidgetState.selected)
-                            ? Colors.white
-                            : const Color(0xFF9AA0AE),
-                      ),
-                    ),
-                    labelTextStyle: WidgetStateProperty.resolveWith(
-                      (states) => TextStyle(
-                        fontSize: 11,
-                        fontWeight: states.contains(WidgetState.selected)
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: states.contains(WidgetState.selected)
-                            ? Colors.white
-                            : const Color(0xFF9AA0AE),
-                      ),
-                    ),
+              child: PillNavBar(
+                items: [
+                  (
+                    const Icon(Icons.home_outlined),
+                    const Icon(Icons.home_rounded),
+                    l.navHome,
                   ),
-                  child: NavigationBar(
-                    selectedIndex: _tab,
-                    onDestinationSelected: (i) => setState(() => _tab = i),
-                    destinations: [
-                      NavigationDestination(
-                        icon: const Icon(Icons.home_outlined),
-                        selectedIcon: const Icon(Icons.home_rounded),
-                        label: l.navHome,
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.settings_outlined),
-                        selectedIcon: const Icon(Icons.settings_rounded),
-                        label: l.navSettings,
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.receipt_long_outlined),
-                        selectedIcon: const Icon(Icons.receipt_long_rounded),
-                        label: l.navLogs,
-                      ),
-                    ],
+                  (
+                    const Icon(Icons.public_outlined),
+                    const Icon(Icons.public_rounded),
+                    l.navServers,
                   ),
-                ),
+                  (
+                    const Icon(Icons.people_outline_rounded),
+                    const Icon(Icons.people_rounded),
+                    l.navAccounts,
+                  ),
+                  (
+                    const Icon(Icons.settings_outlined),
+                    const Icon(Icons.settings_rounded),
+                    l.navSettings,
+                  ),
+                  (
+                    const Icon(Icons.receipt_long_outlined),
+                    const Icon(Icons.receipt_long_rounded),
+                    l.navLogs,
+                  ),
+                ],
+                selected: _tab,
+                onSelected: (i) => setState(() => _tab = i),
+                attentionIndex: 2,
+                attention: needsAttention,
               ),
             ),
           ),

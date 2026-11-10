@@ -17,6 +17,7 @@ import 'format.dart';
 import 'logs_page.dart';
 import 'mobile_shell.dart';
 import 'overview_page.dart';
+import 'pill_nav.dart';
 import 'port_dialog.dart';
 import 'servers_page.dart';
 import 'settings_page.dart';
@@ -196,18 +197,13 @@ class _ShellState extends State<Shell> {
         _Page.about,
       ];
       final page = pages.contains(_page) ? _page : _Page.overview;
-      Widget accountsIcon(IconData icon) => Badge(
-        isLabelVisible: needsAttention > 0,
-        label: Text('$needsAttention'),
-        child: Icon(icon),
-      );
       // Each page's icons and name, for the side menu and the bottom bar.
       final items = [
         for (final page in pages)
           switch (page) {
             _Page.overview => (
-              const Icon(Icons.dashboard_outlined),
-              const Icon(Icons.dashboard_rounded),
+              const Icon(Icons.home_outlined),
+              const Icon(Icons.home_rounded),
               l.navHome,
             ),
             _Page.servers => (
@@ -216,8 +212,8 @@ class _ShellState extends State<Shell> {
               l.navServers,
             ),
             _Page.accounts => (
-              accountsIcon(Icons.people_outline_rounded),
-              accountsIcon(Icons.people_rounded),
+              const Icon(Icons.people_outline_rounded),
+              const Icon(Icons.people_rounded),
               l.navAccounts,
             ),
             _Page.settings => (
@@ -286,8 +282,14 @@ class _ShellState extends State<Shell> {
           ),
         ],
       );
-      // The side menu's pages.
-      const menu = [_Page.overview, _Page.settings, _Page.logs];
+      // The side menu's pages: Home, Servers, Accounts, Settings, Logs.
+      const menu = [
+        _Page.overview,
+        _Page.servers,
+        _Page.accounts,
+        _Page.settings,
+        _Page.logs,
+      ];
       void select(int i) => setState(() {
         _page = pages[i];
         _settingsOpening = null;
@@ -311,8 +313,8 @@ class _ShellState extends State<Shell> {
           onOpenUpdates: () => setState(() => _page = _Page.about),
           child: Row(
             children: [
-              // Home, Settings and Logs; the account at the bottom. The server
-              // list and About open from the home page.
+              // Home, Servers, Accounts, Settings and Logs; the account at
+              // the bottom. About opens from the home page.
               _PillNav(
                 items: [
                   for (final pg in menu) items[pages.indexOf(pg)],
@@ -320,6 +322,7 @@ class _ShellState extends State<Shell> {
                 selected: menu.indexOf(page),
                 onSelected: (i) => select(pages.indexOf(menu[i])),
                 attention: needsAttention,
+                attentionIndex: menu.indexOf(_Page.accounts),
                 accountLabel: status?.activeAccount?.email.split('@').first ?? '',
                 accountsSelected: page == _Page.accounts,
                 onAccounts: () => setState(() {
@@ -330,15 +333,25 @@ class _ShellState extends State<Shell> {
               // A maximized window: the pages stay as wide as reads well; the
               // home page, centered by itself, keeps its colors to the edges.
               Expanded(
-                child: page == _Page.overview || status == null
-                    ? content
-                    : Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1000),
-                          child: content,
-                        ),
-                      ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  transitionBuilder: PillNavBar.swapTransition,
+                  child: KeyedSubtree(
+                    key: ValueKey(page),
+                    child:
+                        page == _Page.overview || status == null
+                            ? content
+                            : Align(
+                                alignment: Alignment.topCenter,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 1000,
+                                  ),
+                                  child: content,
+                                ),
+                              ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -443,14 +456,16 @@ class _NoCore extends StatelessWidget {
   }
 }
 
-/// The computer's side menu: a dark capsule of Home, Settings and Logs, the
-/// chosen one lit in green, and the account (its page) at the bottom.
+/// The computer's side menu: a dark capsule of Home, Servers, Accounts,
+/// Settings and Logs, the chosen one grown into a green pill with its name
+/// sliding out, and the account (its page) at the bottom.
 class _PillNav extends StatelessWidget {
   const _PillNav({
     required this.items,
     required this.selected,
     required this.onSelected,
     required this.attention,
+    required this.attentionIndex,
     required this.accountLabel,
     required this.accountsSelected,
     required this.onAccounts,
@@ -464,6 +479,9 @@ class _PillNav extends StatelessWidget {
   /// Accounts that need signing in again.
   final int attention;
 
+  /// The entry carrying the attention badge.
+  final int? attentionIndex;
+
   /// The account's name under its picture ("Accounts" when empty).
   final String accountLabel;
   final bool accountsSelected;
@@ -475,55 +493,6 @@ class _PillNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    Widget entry({
-      required Widget icon,
-      required String label,
-      required bool on,
-      required VoidCallback onTap,
-    }) {
-      final color = on ? Colors.white : _idle;
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Semantics(
-          button: true,
-          selected: on,
-          label: label,
-          child: Material(
-            color: on ? _green : Colors.transparent,
-            borderRadius: BorderRadius.circular(22),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: SizedBox(
-                width: 72,
-                height: 66,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconTheme(
-                      data: IconThemeData(color: color, size: 24),
-                      child: icon,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 0, 16),
       child: Center(
@@ -545,13 +514,15 @@ class _PillNav extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (var i = 0; i < items.length; i++)
-                entry(
-                  icon: i == selected ? items[i].$2 : items[i].$1,
-                  label: items[i].$3,
-                  on: i == selected,
-                  onTap: () => onSelected(i),
-                ),
+              PillNavBar(
+                items: items,
+                selected: selected,
+                onSelected: onSelected,
+                axis: Axis.vertical,
+                attentionIndex: attentionIndex,
+                attention: attention,
+                capsule: false,
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                 child: Divider(height: 1, color: Color(0x22FFFFFF)),
@@ -566,22 +537,18 @@ class _PillNav extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Badge(
-                          isLabelVisible: attention > 0,
-                          label: Text('$attention'),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: accountsSelected
-                                    ? _green
-                                    : const Color(0x33FFFFFF),
-                                width: 2,
-                              ),
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: accountsSelected
+                                  ? _green
+                                  : const Color(0x33FFFFFF),
+                              width: 2,
                             ),
-                            child: const AppLogo(size: 40),
                           ),
+                          child: const AppLogo(size: 40),
                         ),
                         const SizedBox(height: 4),
                         Text(

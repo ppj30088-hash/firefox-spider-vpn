@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:arman_vpn/app_settings.dart';
 import 'package:arman_vpn/core/core_api.dart';
 import 'package:arman_vpn/core/core_controller.dart';
 import 'package:arman_vpn/core/models.dart';
+import 'package:arman_vpn/core/relay_test.dart';
 import 'package:arman_vpn/core/tun_service.dart';
 import 'package:arman_vpn/core/updates.dart';
 import 'package:arman_vpn/core/announcements.dart';
@@ -15,6 +17,7 @@ import 'package:arman_vpn/core/android_core.dart';
 import 'package:arman_vpn/desktop/close_dialog.dart';
 import 'package:arman_vpn/l10n/app_localizations.dart';
 import 'package:arman_vpn/ui/app.dart';
+import 'package:arman_vpn/ui/pill_nav.dart';
 import 'package:arman_vpn/ui/settings_page.dart'
     show SettingsGroup, pickProgramFile;
 import 'package:arman_vpn/ui/signin_dialog.dart';
@@ -329,6 +332,15 @@ class FakeApi implements CoreApi {
   Future<void> saveSettings(Map<String, Object?> config) async =>
       this.config = config;
 
+  String? relayTestAddress;
+  Stream<RelayTestEvent> relayEvents = const Stream.empty();
+
+  @override
+  Stream<RelayTestEvent> testRelay(String url) {
+    relayTestAddress = url;
+    return relayEvents;
+  }
+
   /// The programs running on the computer (GET /api/tun/programs).
   List<Map<String, Object?>> running = [];
 
@@ -381,6 +393,18 @@ void stillMotion(WidgetTester tester) {
   tester.platformDispatcher.accessibilityFeaturesTestValue =
       const FakeAccessibilityFeatures(disableAnimations: true);
   addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+}
+
+/// Taps a navigation entry (Home, Servers, Accounts, Settings, Logs) in the
+/// pill menu, by its icon: the entry's name is clipped away while it is not
+/// chosen, so its text cannot be tapped.
+Future<void> tapNav(WidgetTester tester, IconData icon) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(PillNavBar),
+      matching: find.byIcon(icon),
+    ),
+  );
 }
 
 void main() {
@@ -442,7 +466,7 @@ void main() {
     expect(api.on, isTrue);
     expect(find.text('Connected'), findsOneWidget);
 
-    await tester.tap(find.text('Accounts').first);
+    await tapNav(tester, Icons.people_outline_rounded);
     await tester.pumpAndSettle();
     expect(find.text('alice@example.com'), findsOneWidget);
     expect(find.text('Needs sign-in'), findsOneWidget);
@@ -1140,7 +1164,7 @@ void main() {
     // The logs are there for everyone.
     expect(find.text('Logs'), findsOneWidget);
 
-    await tester.tap(find.text('Logs'));
+    await tapNav(tester, Icons.receipt_long_outlined);
     await tester.pumpAndSettle();
     expect(find.textContaining('proxy started'), findsOneWidget);
     expect(find.textContaining('renewal slow'), findsOneWidget);
@@ -1225,7 +1249,7 @@ void main() {
     core.start();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Servers'));
+    await tapNav(tester, Icons.public_outlined);
     await tester.pumpAndSettle();
     // Never measured: the page measures the delays as it opens.
     expect(api.pings, 1);
@@ -1270,7 +1294,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
 
     final tops = [
@@ -1326,7 +1350,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Accounts').first);
+    await tapNav(tester, Icons.people_outline_rounded);
     await tester.pumpAndSettle();
 
     // Beside Add account, in plain sight.
@@ -1362,7 +1386,7 @@ void main() {
       await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
       core.start();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Accounts').first);
+      await tapNav(tester, Icons.people_outline_rounded);
       await tester.pumpAndSettle();
 
       expect(find.textContaining('0 MB'), findsOneWidget);
@@ -1428,7 +1452,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
 
     final list = find.byType(SettingsGroup);
@@ -1475,7 +1499,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Relay server'));
     await tester.pumpAndSettle();
@@ -1525,7 +1549,7 @@ void main() {
       await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
       core.start();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Settings'));
+      await tapNav(tester, Icons.settings_outlined);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Relay server'));
       await tester.pumpAndSettle();
@@ -1591,7 +1615,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Connection').first);
     await tester.pumpAndSettle();
@@ -1610,6 +1634,165 @@ void main() {
     core.dispose();
   });
 
+  for (final size in [const Size(430, 1000), const Size(1200, 1400)]) {
+    testWidgets(
+      'relay diagnostics use the unsaved address and show live logs at $size',
+      (tester) async {
+        stillMotion(tester);
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final events = StreamController<RelayTestEvent>();
+        addTearDown(events.close);
+        final api = FakeApi()..relayEvents = events.stream;
+        api.config['network'] = {
+          'api_relay': '',
+          'api_relay_enabled': false,
+          'shared_relay_enabled': true,
+        };
+        final before = jsonEncode(api.config);
+        final core = CoreController(
+          () async => api,
+          pollInterval: const Duration(hours: 1),
+        );
+        await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
+        core.start();
+        await tester.pumpAndSettle();
+        await tapNav(tester, Icons.settings_outlined);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Relay server'));
+        await tester.pumpAndSettle();
+        final button = find.widgetWithText(OutlinedButton, 'Test relay health');
+        expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Relay server'),
+          'https://relay.example/?secret=fixture-secret',
+        );
+        await tester.pump();
+        await tester.ensureVisible(button);
+        await tester.tap(button);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Relay health test'), findsOneWidget);
+        expect(
+          api.relayTestAddress,
+          'https://relay.example/?secret=fixture-secret',
+        );
+        final step = {
+          'stage': 'tls_ech',
+          'status': 'warning',
+          'code': 'eof',
+          'detail': 'TLS connection closed (EOF).',
+          'elapsed_ms': 100,
+        };
+        events.add(RelayTestEvent.fromJson({'step': step}));
+        await tester.pump();
+        expect(
+          find.textContaining('TLS connection closed (EOF).'),
+          findsOneWidget,
+        );
+        final failure = {
+          'stage': 'health',
+          'status': 'error',
+          'code': 'http_429',
+          'detail': 'HTTP 429: the hosting service is rate limiting requests.',
+          'elapsed_ms': 120,
+        };
+        events.add(
+          RelayTestEvent.fromJson({
+            'result': {
+              'ok': false,
+              'host': 'relay.example',
+              'total_ms': 120,
+              'steps': [step, failure],
+            },
+          }),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Relay health could not be confirmed'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('HTTP 429:'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.textContaining('fixture-secret'),
+          ),
+          findsNothing,
+        );
+        String? copiedReport;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copiedReport = (call.arguments as Map)['text'] as String;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await tester.tap(find.text('Copy report'));
+        await tester.pump();
+        expect(copiedReport, contains('HTTP 429:'));
+        expect(copiedReport, isNot(contains('fixture-secret')));
+        expect(jsonEncode(api.config), before);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.widgetWithText(FilledButton, 'Close'));
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(const SizedBox());
+        core.dispose();
+      },
+    );
+  }
+
+  testWidgets(
+    'closing relay diagnostics cancels the test and keeps the core available',
+    (tester) async {
+      stillMotion(tester);
+      var cancelled = false;
+      final events = StreamController<RelayTestEvent>(
+        onCancel: () => cancelled = true,
+      );
+      addTearDown(events.close);
+      final api = FakeApi()..relayEvents = events.stream;
+      api.config['network'] = {
+        'api_relay': 'https://relay.example/',
+        'api_relay_enabled': false,
+        'shared_relay_enabled': true,
+      };
+      final core = CoreController(
+        () async => api,
+        pollInterval: const Duration(hours: 1),
+      );
+      await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
+      core.start();
+      await tester.pumpAndSettle();
+      await tapNav(tester, Icons.settings_outlined);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Relay server'));
+      await tester.pumpAndSettle();
+      final button = find.text('Test relay health');
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Testing…'), findsOneWidget);
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Close'));
+      await tester.pumpAndSettle();
+      expect(cancelled, isTrue);
+      await core.refresh();
+      expect(core.status, isNotNull);
+      expect(api.on, isTrue);
+      await tester.pumpWidget(const SizedBox());
+      core.dispose();
+    },
+  );
+
   testWidgets('the MTU field shows the device default until one is set', (
     tester,
   ) async {
@@ -1626,7 +1809,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Connection').first);
     await tester.pumpAndSettle();
@@ -1674,7 +1857,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('TLS fragmentation'));
     await tester.pumpAndSettle();
@@ -1727,7 +1910,7 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Upstream proxy'));
     await tester.pumpAndSettle();
@@ -1993,7 +2176,7 @@ void main() {
     core.start();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Servers'));
+    await tapNav(tester, Icons.public_outlined);
     await tester.pumpAndSettle();
     // No delay test, which would fail without an account; the notice
     // with its button instead, and the locations still to choose from.
@@ -2136,7 +2319,7 @@ void main() {
     core.start();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Routing'));
     await tester.pumpAndSettle();
@@ -2235,20 +2418,15 @@ void main() {
     expect(find.text('DNS'), findsOneWidget);
 
     // The accounts page says where to make an account.
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationRail),
-        matching: find.text('Accounts'),
-      ),
-    );
+    await tapNav(tester, Icons.people_outline_rounded);
     await tester.pumpAndSettle();
     expect(find.text("Don't have a Firefox Account?"), findsOneWidget);
     expect(find.text('accounts.firefox.com'), findsOneWidget);
 
     // About opens from the home page's button.
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Home'));
+    await tapNav(tester, Icons.home_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('About'));
     await tester.pumpAndSettle();
@@ -2259,7 +2437,7 @@ void main() {
     core.dispose();
   });
 
-  testWidgets('a phone gets Home, Settings and Logs, and pages with a back bar', (
+  testWidgets('a phone gets five tabs, and pages with a back bar', (
     tester,
   ) async {
     stillMotion(tester);
@@ -2276,21 +2454,32 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Servers'), findsOneWidget);
+    expect(find.text('Accounts'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Logs'), findsOneWidget);
 
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Accounts'));
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Accounts'),
+        matching: find.byType(ListTile),
+      ),
+    );
     await tester.pumpAndSettle();
-    // The accounts page under its own top bar, with a back button.
-    expect(find.byType(AppBar), findsOneWidget);
+    // Accounts is a tab of its own now, not a pushed page: no top bar.
+    expect(find.byType(AppBar), findsNothing);
     expect(find.text('alice@example.com'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Network'), findsOneWidget);
+    // Back on the Accounts tab goes Home rather than out of the app.
+    expect(find.text('Data used'), findsOneWidget);
 
     // Back on the Settings tab goes Home rather than out of the app.
+    await tapNav(tester, Icons.settings_outlined);
+    await tester.pumpAndSettle();
+    expect(find.text('Network'), findsOneWidget);
     final popped = await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(popped, isTrue);
@@ -2298,14 +2487,14 @@ void main() {
     expect(find.text('Data used'), findsOneWidget);
 
     // Logs have a tab of their own, and are not in Settings.
-    await tester.tap(find.text('Settings'));
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     expect(find.text('Logs'), findsOneWidget);
 
     // Logs cleared stay cleared when the tab opens again.
     final logsTab = find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.text('Logs'),
+      of: find.byType(PillNavBar),
+      matching: find.byIcon(Icons.receipt_long_outlined),
     );
     await tester.tap(logsTab);
     await tester.pumpAndSettle();
@@ -2313,7 +2502,7 @@ void main() {
     await tester.tap(find.byTooltip('Clear'));
     await tester.pumpAndSettle();
     expect(find.textContaining('proxy started'), findsNothing);
-    await tester.tap(find.text('Home'));
+    await tapNav(tester, Icons.home_outlined);
     await tester.pumpAndSettle();
     await tester.tap(logsTab);
     await tester.pumpAndSettle();
@@ -2341,7 +2530,7 @@ void main() {
     core.start();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('تنظیمات').last);
+    await tapNav(tester, Icons.settings_outlined);
     await tester.pumpAndSettle();
     await tester.tap(find.text('عمومی').last);
     await tester.pumpAndSettle();
@@ -2716,7 +2905,19 @@ void main() {
     await tester.pumpWidget(VpnApp(core: core, settings: AppSettings()));
     core.start();
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsNothing);
+    // The computer layout's side menu stands up; no bottom bar.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is PillNavBar && w.axis == Axis.vertical,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is PillNavBar && w.axis == Axis.horizontal,
+      ),
+      findsNothing,
+    );
     expect(find.text('Logs'), findsOneWidget);
 
     // Just under the computer layout's width, the phone's, with a problem
@@ -2729,7 +2930,13 @@ void main() {
     tester.view.physicalSize = const Size(624, 441);
     await core.refresh();
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
+    // The phone's bottom bar lies down.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is PillNavBar && w.axis == Axis.horizontal,
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text(
         "This country isn't open to your account. Choose another country.",
@@ -3234,7 +3441,7 @@ void main() {
         findsOneWidget,
       );
       // The settings have the same choice.
-      await tester.tap(find.text('Settings'));
+      await tapNav(tester, Icons.settings_outlined);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Connection'));
       await tester.pumpAndSettle();
@@ -3247,7 +3454,7 @@ void main() {
         tester,
         tun: {'state': 'off', 'installed': true},
       );
-      await tester.tap(find.text('Settings'));
+      await tapNav(tester, Icons.settings_outlined);
       await tester.pumpAndSettle();
       // Out of the way: in the Advanced settings, not with TUN mode's.
       expect(find.text('TUN settings'), findsNothing);
@@ -3300,7 +3507,7 @@ void main() {
       List<Object?> programs() =>
           (api.config['tun'] as Map)['programs'] as List<Object?>;
 
-      await tester.tap(find.text('Settings'));
+      await tapNav(tester, Icons.settings_outlined);
       await tester.pumpAndSettle();
       // After Routing.
       final routing = tester.getTopLeft(find.text('Routing')).dy;
