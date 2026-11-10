@@ -145,11 +145,13 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     widget.core.addListener(_countTraffic);
+    AndroidCore.homeRequests.addListener(_openHome);
   }
 
   @override
   void dispose() {
     widget.core.removeListener(_countTraffic);
+    AndroidCore.homeRequests.removeListener(_openHome);
     super.dispose();
   }
 
@@ -164,24 +166,12 @@ class _ShellState extends State<Shell> {
   /// page is chosen.
   SettingsSection? _settingsOpening;
 
-  @override
-  void initState() {
-    super.initState();
-    AndroidCore.homeRequests.addListener(_openHome);
-  }
-
   void _openHome() {
     Navigator.of(context).popUntil((route) => route.isFirst);
     setState(() {
       _page = _Page.overview;
       _settingsOpening = null;
     });
-  }
-
-  @override
-  void dispose() {
-    AndroidCore.homeRequests.removeListener(_openHome);
-    super.dispose();
   }
 
   @override
