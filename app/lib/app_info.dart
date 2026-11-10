@@ -8,9 +8,9 @@ import 'core/announcements.dart';
 export 'update_manifest.dart';
 
 /// The app's version, "major.minor.patch": `version` in pubspec.yaml, which
-/// the build passes (scripts/build-*.ps1: --dart-define=APP_VERSION=1.1.0).
+/// the build passes (scripts/build-*.ps1: --dart-define=APP_VERSION=1.2.0).
 /// "0.0.0" is a development build.
-const appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.1.0');
+const appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.2.0');
 
 /// The GitHub repository, "owner/name", for the update check. Empty: this
 /// build has no update source, so it never looks for (or offers) another
