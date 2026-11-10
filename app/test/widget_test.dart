@@ -2471,9 +2471,11 @@ void main() {
     // Accounts is a tab of its own now, not a pushed page: no top bar.
     expect(find.byType(AppBar), findsNothing);
     expect(find.text('alice@example.com'), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
     // Back on the Accounts tab goes Home rather than out of the app.
+    // (A tab has no back button to tap; this is the system's back.)
+    final backFromAccounts = await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(backFromAccounts, isTrue);
     expect(find.text('Data used'), findsOneWidget);
 
     // Back on the Settings tab goes Home rather than out of the app.

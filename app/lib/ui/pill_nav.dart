@@ -67,8 +67,32 @@ class PillNavBar extends StatelessWidget {
     if (horizontal) {
       final content = LayoutBuilder(
         builder: (context, constraints) {
-          // The demo shrinks the circles so the bar fits: (width - 142) / 5.
-          final s = ((constraints.maxWidth - 142) / 5).clamp(38.0, 60.0);
+          // The icons shrink so the bar fits: measure the widest name
+          // in the real font, then share what is left between the five
+          // circles. A fixed guess overflows on narrow phones, because
+          // the names are wider in the app's font than in the demo's.
+          final style = DefaultTextStyle.of(context).style.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          );
+          final textScaler = MediaQuery.textScalerOf(context);
+          double widest = 0;
+          for (final item in items) {
+            final painter = TextPainter(
+              text: TextSpan(text: item.$3, style: style),
+              textDirection: Directionality.of(context),
+              textScaler: textScaler,
+            )..layout();
+            if (painter.width > widest) widest = painter.width;
+          }
+          // Five circles, four 4px gaps, and the chosen name with the
+          // padding around it (10 before it, 16 after it), plus a few
+          // pixels of slack: text measures a hair wider on screen than
+          // in the painter, and the bar must never overflow. The floor
+          // stays low so the circles shrink instead of overflowing on
+          // a narrow screen or with a wide font.
+          final s = ((constraints.maxWidth - 4 - 16 - widest - 26) / 5)
+              .clamp(16.0, 60.0);
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -198,6 +222,10 @@ class _PillItemState extends State<_PillItem> {
                 splashColor: PillNavBar.green.withValues(alpha: 0.38),
                 child: Container(
                   width: widget.horizontal ? null : 72,
+                  // The bar gets a tall height from its parent, so the
+                  // pill's own height is fixed here; without it the label
+                  // below would stretch the whole pill to full height.
+                  height: widget.horizontal ? widget.size : null,
                   padding: EdgeInsetsDirectional.only(end: 16 * t),
                   child: widget.horizontal
                       ? Row(
@@ -266,6 +294,9 @@ class _PillItemState extends State<_PillItem> {
         child: Align(
           alignment: AlignmentDirectional.centerStart,
           widthFactor: t,
+          // Without this the name takes the whole height its parent
+          // offers, and the pill grows as tall as the screen.
+          heightFactor: 1.0,
           child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 10),
             child: sliding,
