@@ -13,6 +13,7 @@
 </p>
 
 <div dir="rtl">
+این پروژه از https://github.com/armanlife/arman-vpn-client فورک شده
 
 # 🕷️ spider firefox vpn
 
