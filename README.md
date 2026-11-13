@@ -180,13 +180,6 @@ If unsure, **arm64-v8a**. Only if it will not install, or the phone is very old,
 
 Not supported; 64-bit Windows only.
 
-</details>
-
-## 🛠️ Build and release
-
-On every push to `main`, if the version in `app/pubspec.yaml` has no release yet, GitHub Actions builds all four systems and publishes the release by itself. To publish by hand: **Actions → Build → Run workflow**.
-
 ---
 
 <p align="center"><sub>Based on <a href="https://github.com/armanlife/arman-vpn-client">armanlife/arman-vpn-client</a></sub></p>
-این پروژه از https://github.com/armanlife/arman-vpn-client فورک شده
