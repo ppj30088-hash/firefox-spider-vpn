@@ -13,7 +13,6 @@
 </p>
 
 <div dir="rtl">
-این پروژه از https://github.com/armanlife/arman-vpn-client فورک شده
 
 # 🕷️ spider firefox vpn
 
@@ -190,3 +189,4 @@ On every push to `main`, if the version in `app/pubspec.yaml` has no release yet
 ---
 
 <p align="center"><sub>Based on <a href="https://github.com/armanlife/arman-vpn-client">armanlife/arman-vpn-client</a></sub></p>
+این پروژه از https://github.com/armanlife/arman-vpn-client فورک شده
